@@ -56,3 +56,13 @@ begin
          using (user_id = auth.uid()) with check (user_id = auth.uid())', t);
   end loop;
 end $$;
+
+-- Permisos para la Data API (solo usuarios con sesión; RLS filtra las filas)
+grant usage on schema public to authenticated;
+grant usage on type project_status to authenticated;
+grant select, insert, update, delete
+  on public.services, public.projects, public.project_services, public.notes
+  to authenticated;
+
+-- Refresca la caché de esquema de la API
+notify pgrst, 'reload schema';
