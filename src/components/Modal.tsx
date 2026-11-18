@@ -1,6 +1,28 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 
+let locks = 0
+let savedY = 0
+
+function lockScroll() {
+  if (locks++ === 0) {
+    savedY = window.scrollY
+    const b = document.body.style
+    b.position = 'fixed'
+    b.top = `-${savedY}px`
+    b.left = '0'
+    b.right = '0'
+    b.overflow = 'hidden'
+  }
+  return () => {
+    if (--locks === 0) {
+      const b = document.body.style
+      b.position = b.top = b.left = b.right = b.overflow = ''
+      window.scrollTo(0, savedY)
+    }
+  }
+}
+
 interface Props {
   open: boolean
   title: string
@@ -12,6 +34,12 @@ interface Props {
 
 export function Modal({ open, title, onClose, children, size = 'md' }: Props) {
   const ref = useRef<HTMLDialogElement>(null)
+
+  // Mientras el modal está abierto, la página de fondo no se puede desplazar (también en iOS)
+  useEffect(() => {
+    if (!open) return
+    return lockScroll()
+  }, [open])
 
   useEffect(() => {
     const d = ref.current
@@ -25,7 +53,7 @@ export function Modal({ open, title, onClose, children, size = 'md' }: Props) {
       ref={ref}
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
-      className={`${size === 'lg' ? 'sm:w-[min(44rem,calc(100vw-2rem))]' : 'sm:w-[min(32rem,calc(100vw-2rem))]'} mb-0 mt-auto max-h-[92dvh] w-full max-w-full overflow-hidden rounded-t-card border border-white/10 bg-carbon p-0 text-ghost backdrop:bg-black/70 sm:m-auto sm:max-h-[min(90dvh,56rem)] sm:rounded-card`}
+      className={`${size === 'lg' ? 'sm:w-[min(44rem,calc(100vw-2rem))]' : 'sm:w-[min(32rem,calc(100vw-2rem))]'} m-auto max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-full overflow-hidden overscroll-none rounded-card border border-white/10 bg-carbon p-0 text-ghost backdrop:bg-black/70 sm:max-h-[min(90dvh,56rem)]`}
     >
       {open && (
         <div className="flex max-h-[inherit] flex-col">
@@ -35,7 +63,7 @@ export function Modal({ open, title, onClose, children, size = 'md' }: Props) {
               <X size={18} />
             </button>
           </div>
-          <div className="overflow-y-auto overscroll-contain px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-6 sm:pb-6">
+          <div className="overflow-y-auto overscroll-contain px-5 pb-5 sm:px-6 sm:pb-6">
             {children}
           </div>
         </div>
