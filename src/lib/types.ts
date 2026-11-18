@@ -30,6 +30,7 @@ export type NoteColor = 'violet' | 'lavender' | 'amber' | 'emerald' | 'rose' | '
 
 export interface Note {
   id: string
+  project_id: string | null
   content: string
   color: NoteColor
   created_at: string

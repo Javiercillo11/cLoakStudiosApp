@@ -11,9 +11,9 @@ import { StatusBadge, STATUS_STYLE } from '../components/StatusBadge'
 
 function Kpi({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
   return (
-    <div className="card p-5">
-      <p className="eyebrow mb-3">{label}</p>
-      <p className="font-display text-3xl font-semibold tracking-tight">{value}</p>
+    <div className="card min-w-0 p-4 sm:p-5">
+      <p className="eyebrow mb-2 sm:mb-3">{label}</p>
+      <p className="break-words font-display text-xl font-semibold tracking-tight min-[400px]:text-2xl sm:text-3xl">{value}</p>
       {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
     </div>
   )
@@ -66,15 +66,15 @@ export function Dashboard() {
       ) : projects.loading || services.loading ? (
         <StateMessage title="Cargando…" />
       ) : (
-        <div className="flex flex-col gap-6">
-          <section aria-label="Indicadores" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="flex flex-col gap-4 sm:gap-6">
+          <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             <Kpi label="Proyectos" value={total} hint={`${stats.byStatus.en_desarrollo} en desarrollo`} />
             <Kpi label="Facturado" value={formatEUR(stats.billed)} hint="Servicios de proyectos desplegados" />
             <Kpi label="Pipeline" value={formatEUR(stats.pipeline)} hint="Nuevos + en desarrollo" />
             <Kpi label="Servicios" value={services.rows.length} hint={`Precio medio ${formatEUR(stats.avgTicket)}`} />
           </section>
 
-          <div className="grid gap-6 lg:grid-cols-5">
+          <div className="grid gap-4 sm:gap-6 lg:grid-cols-5">
             <section className="card p-5 lg:col-span-2" aria-labelledby="by-status">
               <h2 id="by-status" className="mb-5 text-lg font-semibold">Proyectos por estado</h2>
               {total === 0 ? (
@@ -133,7 +133,7 @@ export function Dashboard() {
             ) : (
               <ul className="divide-y divide-white/5">
                 {projects.rows.slice(0, 5).map((p) => (
-                  <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                  <li key={p.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-3">
                     <div className="min-w-0">
                       <p className="truncate font-medium">{p.client_name}</p>
                       <p className="truncate text-sm text-muted">{p.business_name || '—'}</p>

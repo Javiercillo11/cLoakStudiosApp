@@ -33,10 +33,13 @@ create table public.project_services (
 create table public.notes (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users on delete cascade,
+  project_id uuid references public.projects on delete set null,
   content text not null default '',
   color text not null default 'violet',
   created_at timestamptz not null default now()
 );
+
+create index notes_project_id_idx on public.notes (project_id);
 
 -- updated_at automático
 create or replace function public.touch_updated_at() returns trigger

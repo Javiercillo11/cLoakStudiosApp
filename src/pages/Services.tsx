@@ -60,15 +60,15 @@ export function Services() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {rows.map((s) => (
-            <article key={s.id} className="card group flex flex-col p-5 transition-colors hover:border-violet/30">
+            <article key={s.id} className="card group flex flex-col p-4 sm:p-5 transition-colors hover:border-violet/30">
               <div className="mb-3 flex items-start justify-between gap-3">
-                <h2 className="text-lg font-semibold">{s.name}</h2>
-                <span className="font-mono text-sm text-violet-soft">{formatEUR(Number(s.price))}</span>
+                <h2 className="min-w-0 break-words text-lg font-semibold">{s.name}</h2>
+                <span className="shrink-0 font-mono text-sm text-violet-soft">{formatEUR(Number(s.price))}</span>
               </div>
               <p className="flex-1 whitespace-pre-line text-sm text-muted">{s.description || '—'}</p>
-              <div className="mt-4 flex justify-end gap-1 border-t border-white/5 pt-3">
-                <button onClick={() => openEdit(s)} className="btn-ghost p-2" aria-label={`Editar ${s.name}`}><Pencil size={16} /></button>
-                <button onClick={() => setToDelete(s)} className="btn-ghost p-2 hover:text-danger" aria-label={`Eliminar ${s.name}`}><Trash2 size={16} /></button>
+              <div className="mt-4 flex justify-end gap-1 border-t border-white/5 pt-2">
+                <button onClick={() => openEdit(s)} className="btn-icon" aria-label={`Editar ${s.name}`}><Pencil size={16} /></button>
+                <button onClick={() => setToDelete(s)} className="btn-icon hover:text-danger" aria-label={`Eliminar ${s.name}`}><Trash2 size={16} /></button>
               </div>
             </article>
           ))}
@@ -78,7 +78,7 @@ export function Services() {
       <Modal open={open} title={editing ? 'Editar servicio' : 'Nuevo servicio'} onClose={() => setOpen(false)}>
         <form onSubmit={save} noValidate>
           <label className="label" htmlFor="s-name">Nombre</label>
-          <input id="s-name" className="input mb-4" value={draft.name} autoFocus
+          <input id="s-name" className="input mb-4" value={draft.name}
             onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
           <label className="label" htmlFor="s-desc">Descripción</label>
           <textarea id="s-desc" rows={4} className="input mb-4 resize-y" value={draft.description}
@@ -88,8 +88,8 @@ export function Services() {
             onChange={(e) => setDraft({ ...draft, price: e.target.value })} />
           {formError && <p className="mb-4 text-sm text-danger" role="alert">{formError}</p>}
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setOpen(false)} className="btn-ghost">Cancelar</button>
-            <button type="submit" className="btn-primary" disabled={saving}>Guardar</button>
+            <button type="button" onClick={() => setOpen(false)} className="btn-ghost flex-1 sm:flex-none">Cancelar</button>
+            <button type="submit" className="btn-primary flex-1 sm:flex-none" disabled={saving}>Guardar</button>
           </div>
         </form>
       </Modal>

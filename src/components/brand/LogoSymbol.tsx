@@ -1,6 +1,6 @@
 import { useId } from 'react'
 
-/** C abstracta formada por una cinta plegada. Original SVG, viewBox 64×64. */
+/** C abstracta formada por una cinta plegada. Idéntico a public/favicon.svg, viewBox 64×64. */
 export const SYMBOL_PATH =
   'M58 6H30A26 26 0 0 0 30 58H58L50 46H30A14 14 0 0 1 30 18H50Z'
 
@@ -13,8 +13,8 @@ interface Props {
 }
 
 export function LogoSymbol({ size = 32, mono = false, className, title }: Props) {
-  const id = useId()
-  const grad = `cloak-grad-${id}`
+  // useId devuelve ":r0:"; los ":" rompen la referencia url(#…) en algunos navegadores
+  const grad = `cloak-grad-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
   return (
     <svg
       width={size}
@@ -35,13 +35,6 @@ export function LogoSymbol({ size = 32, mono = false, className, title }: Props)
         </defs>
       )}
       <path d={SYMBOL_PATH} fill={mono ? 'currentColor' : `url(#${grad})`} />
-      {!mono && (
-        <g fill="#fff">
-          {/* facetas del pliegue */}
-          <path d="M36 6H58L42 12.5Z" opacity="0.28" />
-          <path d="M33 53L58 58L46 51Z" opacity="0.18" />
-        </g>
-      )}
     </svg>
   )
 }

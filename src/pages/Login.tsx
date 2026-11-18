@@ -1,13 +1,14 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
-import { Loader2 } from 'lucide-react'
+import { Check, Loader2 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
-import { isConfigured } from '../lib/supabase'
+import { getRemember, getRememberedEmail, isConfigured, setRemember } from '../lib/supabase'
 import { Wordmark } from '../components/brand/Wordmark'
 
 export function Login() {
   const { session, signIn } = useAuth()
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(getRememberedEmail)
+  const [remember, setRememberState] = useState(getRemember)
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -18,6 +19,7 @@ export function Login() {
     e.preventDefault()
     setBusy(true)
     setError(null)
+    setRemember(remember, email.trim())
     const err = await signIn(email, password)
     if (err) setError(err === 'Invalid login credentials' ? 'Email o contraseña incorrectos.' : err)
     setBusy(false)
@@ -49,11 +51,21 @@ export function Login() {
 
           <label className="label" htmlFor="email">Email</label>
           <input id="email" type="email" autoComplete="email" required className="input mb-4"
-            value={email} onChange={(e) => setEmail(e.target.value)} />
+            autoFocus={!email} value={email} onChange={(e) => setEmail(e.target.value)} />
 
           <label className="label" htmlFor="password">Contraseña</label>
-          <input id="password" type="password" autoComplete="current-password" required className="input mb-6"
-            value={password} onChange={(e) => setPassword(e.target.value)} />
+          <input id="password" type="password" autoComplete="current-password" required className="input mb-4"
+            autoFocus={!!email} value={password} onChange={(e) => setPassword(e.target.value)} />
+
+          <label className="mb-6 flex cursor-pointer select-none items-center gap-2.5 text-sm text-muted hover:text-ghost">
+            <input type="checkbox" className="peer sr-only" checked={remember}
+              onChange={(e) => setRememberState(e.target.checked)} />
+            <span aria-hidden
+              className="grid h-4 w-4 shrink-0 place-items-center rounded border border-white/25 transition-colors peer-checked:border-violet peer-checked:bg-violet peer-focus-visible:ring-2 peer-focus-visible:ring-violet/60 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-carbon">
+              {remember && <Check size={12} strokeWidth={3} className="text-white" />}
+            </span>
+            Recuérdame
+          </label>
 
           {error && <p className="mb-4 text-sm text-danger" role="alert">{error}</p>}
 

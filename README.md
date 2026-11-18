@@ -9,6 +9,7 @@ Pantallas: Login · Dashboard (KPIs) · Proyectos · Servicios · Notas.
 
 1. Crea un proyecto en [supabase.com](https://supabase.com) (plan gratuito).
 2. **SQL Editor** → pega y ejecuta [`supabase/schema.sql`](supabase/schema.sql). Crea las tablas y las políticas RLS (cada usuario solo ve sus datos).
+   - Si ya tenías la base de datos creada, ejecuta además los scripts de [`supabase/migrations/`](supabase/migrations) que aún no hayas aplicado.
 3. **Authentication → Sign In / Providers** → desactiva *Allow new users to sign up* (nadie más podrá registrarse).
 4. **Authentication → Users → Add user** → crea tu usuario (email + contraseña). Esas son tus credenciales de acceso.
 5. **Project Settings → API** → copia la *Project URL* y la *anon public key*.
