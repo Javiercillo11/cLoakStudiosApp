@@ -72,8 +72,8 @@ export function Layout() {
       {open && (
         <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Menú">
           <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 w-[min(18rem,85vw)] border-r border-white/5 bg-carbon">
-            <button onClick={() => setOpen(false)} className="btn-icon absolute right-3 top-4" aria-label="Cerrar menú">
+          <aside className="absolute inset-y-0 left-0 w-[min(18rem,85vw)] border-r border-white/5 bg-carbon pt-[env(safe-area-inset-top)]">
+            <button onClick={() => setOpen(false)} className="btn-icon absolute right-3 top-[calc(env(safe-area-inset-top)+1rem)]" aria-label="Cerrar menú">
               <X size={18} />
             </button>
             {sidebar}
@@ -84,7 +84,7 @@ export function Layout() {
       <InstallAppDialog open={installOpen} onClose={() => setInstallOpen(false)} />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/5 bg-obsidian/90 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur lg:hidden">
+        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/5 bg-obsidian px-4 py-3 pt-[max(0.75rem,calc(env(safe-area-inset-top)+0.5rem))] lg:hidden">
           <button onClick={() => setOpen(true)} className="btn-icon -ml-2" aria-label="Abrir menú">
             <Menu size={20} />
           </button>
