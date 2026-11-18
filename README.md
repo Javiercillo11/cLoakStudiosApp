@@ -18,8 +18,14 @@ Pantallas: Login · Dashboard (KPIs) · Proyectos · Servicios · Notas.
 
 ## 2. Desarrollo local
 
+Crea un archivo `.env` en la raíz con:
+
+```
+VITE_SUPABASE_URL=https://xxxxxxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=tu-anon-key
+```
+
 ```bash
-cp .env.example .env.local   # rellena URL y anon key
 npm install
 npm run dev
 ```
