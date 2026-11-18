@@ -1,0 +1,103 @@
+import { useState, type FormEvent } from 'react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { useTable } from '../hooks/useTable'
+import type { Service } from '../lib/types'
+import { formatEUR } from '../lib/format'
+import { PageHeader } from '../components/PageHeader'
+import { Modal } from '../components/Modal'
+import { ConfirmDialog } from '../components/ConfirmDialog'
+import { StateMessage } from '../components/StateMessage'
+
+type Draft = { name: string; description: string; price: string }
+const EMPTY: Draft = { name: '', description: '', price: '' }
+
+export function Services() {
+  const { rows, loading, error, insert, update, remove } = useTable<Service>('services')
+  const [editing, setEditing] = useState<Service | null>(null)
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState<Draft>(EMPTY)
+  const [toDelete, setToDelete] = useState<Service | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  const openNew = () => { setEditing(null); setDraft(EMPTY); setFormError(null); setOpen(true) }
+  const openEdit = (s: Service) => {
+    setEditing(s)
+    setDraft({ name: s.name, description: s.description, price: String(s.price) })
+    setFormError(null)
+    setOpen(true)
+  }
+
+  const save = async (e: FormEvent) => {
+    e.preventDefault()
+    const price = Number(draft.price.replace(',', '.'))
+    if (!draft.name.trim()) return setFormError('El nombre es obligatorio.')
+    if (Number.isNaN(price) || price < 0) return setFormError('El precio debe ser un número positivo.')
+    setSaving(true)
+    try {
+      const values = { name: draft.name.trim(), description: draft.description.trim(), price }
+      if (editing) await update(editing.id, values)
+      else await insert(values)
+      setOpen(false)
+    } catch (err) {
+      setFormError((err as Error).message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <>
+      <PageHeader eyebrow="Catálogo" title="Servicios"
+        action={<button onClick={openNew} className="btn-primary"><Plus size={16} /> Nuevo servicio</button>} />
+
+      {error ? (
+        <StateMessage title="No se pudieron cargar los servicios" tone="error">{error}</StateMessage>
+      ) : loading ? (
+        <StateMessage title="Cargando…" />
+      ) : rows.length === 0 ? (
+        <StateMessage title="Aún no hay servicios">Añade el primero para poder asignarlo a tus proyectos.</StateMessage>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {rows.map((s) => (
+            <article key={s.id} className="card group flex flex-col p-5 transition-colors hover:border-violet/30">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <h2 className="text-lg font-semibold">{s.name}</h2>
+                <span className="font-mono text-sm text-violet-soft">{formatEUR(Number(s.price))}</span>
+              </div>
+              <p className="flex-1 whitespace-pre-line text-sm text-muted">{s.description || '—'}</p>
+              <div className="mt-4 flex justify-end gap-1 border-t border-white/5 pt-3">
+                <button onClick={() => openEdit(s)} className="btn-ghost p-2" aria-label={`Editar ${s.name}`}><Pencil size={16} /></button>
+                <button onClick={() => setToDelete(s)} className="btn-ghost p-2 hover:text-danger" aria-label={`Eliminar ${s.name}`}><Trash2 size={16} /></button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+
+      <Modal open={open} title={editing ? 'Editar servicio' : 'Nuevo servicio'} onClose={() => setOpen(false)}>
+        <form onSubmit={save} noValidate>
+          <label className="label" htmlFor="s-name">Nombre</label>
+          <input id="s-name" className="input mb-4" value={draft.name} autoFocus
+            onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+          <label className="label" htmlFor="s-desc">Descripción</label>
+          <textarea id="s-desc" rows={4} className="input mb-4 resize-y" value={draft.description}
+            onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
+          <label className="label" htmlFor="s-price">Precio (€)</label>
+          <input id="s-price" inputMode="decimal" className="input mb-5 font-mono" value={draft.price} placeholder="0,00"
+            onChange={(e) => setDraft({ ...draft, price: e.target.value })} />
+          {formError && <p className="mb-4 text-sm text-danger" role="alert">{formError}</p>}
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setOpen(false)} className="btn-ghost">Cancelar</button>
+            <button type="submit" className="btn-primary" disabled={saving}>Guardar</button>
+          </div>
+        </form>
+      </Modal>
+
+      <ConfirmDialog open={!!toDelete} title="Eliminar servicio"
+        message={`¿Eliminar "${toDelete?.name}"? Se quitará también de los proyectos que lo usen.`}
+        onCancel={() => setToDelete(null)}
+        onConfirm={async () => { if (toDelete) await remove(toDelete.id); setToDelete(null) }} />
+    </>
+  )
+}

@@ -1,0 +1,38 @@
+@import './tokens.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body {
+    @apply bg-obsidian text-ghost font-body antialiased;
+  }
+  h1, h2, h3 { @apply font-display; }
+  :focus-visible { @apply outline-none ring-2 ring-violet-soft ring-offset-2 ring-offset-obsidian; }
+  ::selection { background: rgb(139 92 246 / 0.4); }
+}
+
+@layer components {
+  .card { @apply rounded-card border border-white/5 bg-carbon; }
+  .eyebrow { @apply font-mono text-[11px] uppercase tracking-[0.18em] text-muted; }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-control px-4 py-2 text-sm font-medium
+      transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary { @apply btn bg-violet text-white hover:bg-violet/85; }
+  .btn-ghost { @apply btn text-muted hover:bg-white/5 hover:text-ghost; }
+  .btn-danger { @apply btn bg-danger/15 text-danger hover:bg-danger/25; }
+  .input {
+    @apply w-full rounded-control border border-white/10 bg-obsidian px-3 py-2 text-sm text-ghost
+      placeholder:text-muted/60 transition-colors hover:border-white/20 focus:border-violet focus:outline-none;
+  }
+  .label { @apply mb-1.5 block text-xs font-medium text-muted; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
