@@ -1,15 +1,19 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { ChevronRight, Pencil, Plus, Search, StickyNote, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronRight, Layers, Pencil, Plus, Search, StickyNote, Trash2 } from 'lucide-react'
 import { useTable } from '../hooks/useTable'
 import { supabase } from '../lib/supabase'
 import { STATUSES, STATUS_LABEL, type Note, type Project, type ProjectStatus, type Service } from '../lib/types'
 import { NOTE_COLORS } from '../lib/noteColors'
-import { formatDate } from '../lib/format'
+import { ServiceIcon } from '../lib/serviceIcons'
+import { formatDate, formatEUR } from '../lib/format'
 import { PageHeader } from '../components/PageHeader'
 import { Modal } from '../components/Modal'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { StateMessage } from '../components/StateMessage'
 import { StatusMenu } from '../components/StatusMenu'
+import { StatusIcon, STATUS_STYLE } from '../components/StatusBadge'
+import { Dropdown } from '../components/Dropdown'
+import { ClampedText } from '../components/ClampedText'
 
 type Draft = {
   client_name: string
@@ -19,14 +23,30 @@ type Draft = {
 }
 const EMPTY: Draft = { client_name: '', business_name: '', description: '', serviceIds: [] }
 
+function ServiceChip({ service }: { service?: Service }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-white/5 px-2 py-0.5 text-xs text-ghost/90">
+      <ServiceIcon name={service?.icon} size={12} className="text-violet-soft" />
+      {service?.name ?? '…'}
+    </span>
+  )
+}
+
 export function Projects() {
   const projects = useTable<Project>('projects', '*, project_services(service_id)')
   const services = useTable<Service>('services')
   const notes = useTable<Note>('notes')
   const serviceById = useMemo(() => new Map(services.rows.map((s) => [s.id, s])), [services.rows])
+  /** Precio del proyecto = suma de los precios de sus servicios */
+  const priceOf = (ids: string[]) => ids.reduce((sum, id) => sum + Number(serviceById.get(id)?.price ?? 0), 0)
+  const projectPrice = (p: Project) => priceOf(p.project_services.map((x) => x.service_id))
 
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<ProjectStatus | 'todos'>('todos')
+  /** Orden manual por columna; null = orden por defecto (Nuevo primero, luego por alta) */
+  const [sort, setSort] = useState<{ key: 'price' | 'created'; dir: 'asc' | 'desc' } | null>(null)
+  const toggleSort = (key: 'price' | 'created') =>
+    setSort((cur) => (cur?.key !== key ? { key, dir: 'desc' } : cur.dir === 'desc' ? { key, dir: 'asc' } : null))
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Project | null>(null)
   const [draft, setDraft] = useState<Draft>(EMPTY)
@@ -41,6 +61,14 @@ export function Projects() {
     if (filter !== 'todos' && p.status !== filter) return false
     const q = query.trim().toLowerCase()
     return !q || [p.client_name, p.business_name, p.description].some((v) => v.toLowerCase().includes(q))
+  }).sort((a, b) => {
+    if (sort) {
+      const sign = sort.dir === 'asc' ? 1 : -1
+      const diff = sort.key === 'price' ? projectPrice(a) - projectPrice(b) : a.created_at.localeCompare(b.created_at)
+      return sign * diff || b.created_at.localeCompare(a.created_at)
+    }
+    // Por defecto: primero los "Nuevo"; dentro de cada grupo, por fecha de alta (más reciente primero)
+    return Number(b.status === 'nuevo') - Number(a.status === 'nuevo') || b.created_at.localeCompare(a.created_at)
   })
 
   const openNew = () => { setEditing(null); setDraft(EMPTY); setFormError(null); setOpen(true) }
@@ -56,12 +84,6 @@ export function Projects() {
     setFormError(null)
     setOpen(true)
   }
-
-  const toggleService = (id: string) =>
-    setDraft((d) => ({
-      ...d,
-      serviceIds: d.serviceIds.includes(id) ? d.serviceIds.filter((x) => x !== id) : [...d.serviceIds, id],
-    }))
 
   const save = async (e: FormEvent) => {
     e.preventDefault()
@@ -115,14 +137,16 @@ export function Projects() {
           <input type="search" placeholder="Buscar cliente, negocio o descripción…" aria-label="Buscar proyectos"
             className="input pl-9" value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
-        <div className="flex shrink-0 gap-1 overflow-x-auto rounded-control border border-white/10 p-1 [scrollbar-width:none]" role="group" aria-label="Filtrar por estado">
-          {(['todos', ...STATUSES] as const).map((s) => (
-            <button key={s} onClick={() => setFilter(s)} aria-pressed={filter === s}
-              className={`flex-1 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-medium transition-colors sm:flex-none sm:py-1.5 ${
-                filter === s ? 'bg-violet/20 text-ghost' : 'text-muted hover:text-ghost'}`}>
-              {s === 'todos' ? 'Todos' : STATUS_LABEL[s]}
-            </button>
-          ))}
+        <div className="sm:w-56">
+          <Dropdown id="status-filter" placeholder="Estado" value={filter}
+            onChange={(v) => setFilter(v as ProjectStatus | 'todos')}
+            options={[
+              { value: 'todos', label: 'Todos los estados', icon: <Layers size={15} className="shrink-0 text-muted" /> },
+              ...STATUSES.map((st) => ({
+                value: st, label: STATUS_LABEL[st],
+                icon: <StatusIcon status={st} size={15} className={STATUS_STYLE[st].text} />,
+              })),
+            ]} />
         </div>
       </div>
 
@@ -146,15 +170,16 @@ export function Projects() {
                   <span className="block break-words font-medium">{p.client_name}</span>
                   {p.business_name && <span className="block truncate text-sm text-muted">{p.business_name}</span>}
                 </button>
-                <ChevronRight size={18} className="mt-0.5 shrink-0 text-muted" aria-hidden />
+                <span className="flex shrink-0 items-center gap-1">
+                  <span className="font-mono text-sm text-violet-soft">{formatEUR(projectPrice(p))}</span>
+                  <ChevronRight size={18} className="text-muted" aria-hidden />
+                </span>
               </div>
               {p.description && <p className="mt-2 line-clamp-2 text-sm text-muted">{p.description}</p>}
               {p.project_services.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-1">
                   {p.project_services.map(({ service_id }) => (
-                    <span key={service_id} className="rounded-md bg-white/5 px-2 py-0.5 text-xs text-ghost/90">
-                      {serviceById.get(service_id)?.name ?? '…'}
-                    </span>
+                    <ServiceChip key={service_id} service={serviceById.get(service_id)} />
                   ))}
                 </div>
               )}
@@ -175,36 +200,50 @@ export function Projects() {
 
         {/* Tablet/escritorio: tabla */}
         <div className="card hidden overflow-x-auto md:block">
-          <table className="w-full min-w-[56rem] text-left text-sm">
+          <table className="w-full min-w-[62rem] text-left text-sm">
             <thead>
               <tr className="border-b border-white/5">
-                {['Cliente', 'Negocio', 'Descripción', 'Servicios', 'Estado', 'Alta', ''].map((h) => (
-                  <th key={h} scope="col" className="eyebrow px-4 py-3 font-normal">{h}</th>
-                ))}
+                {['Cliente', 'Negocio', 'Descripción', 'Servicios', 'Precio', 'Estado', 'Alta', ''].map((h) => {
+                  const key = h === 'Precio' ? 'price' : h === 'Alta' ? 'created' : null
+                  if (!key) return <th key={h} scope="col" className="eyebrow px-4 py-3 font-normal">{h}</th>
+                  const active = sort?.key === key
+                  const Arrow = !active ? ArrowUpDown : sort.dir === 'desc' ? ArrowDown : ArrowUp
+                  return (
+                    <th key={h} scope="col" className={`px-2 py-1.5 font-normal ${key === 'price' ? 'text-right' : ''}`}
+                      aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+                      <button type="button" onClick={() => toggleSort(key)}
+                        title={!active ? 'Ordenar de mayor a menor' : sort.dir === 'desc' ? 'Ordenar de menor a mayor' : 'Quitar orden'}
+                        className={`eyebrow inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-white/5 hover:text-ghost ${
+                          active ? 'text-ghost' : ''} ${key === 'price' ? 'flex-row-reverse' : ''}`}>
+                        {h}
+                        <Arrow size={12} className={active ? 'text-violet-soft' : 'opacity-50'} />
+                      </button>
+                    </th>
+                  )
+                })}
               </tr>
             </thead>
             <tbody>
               {visible.map((p) => (
                 <tr key={p.id} onClick={() => setViewingId(p.id)}
                   className="cursor-pointer border-b border-white/5 last:border-0 hover:bg-white/[0.03]">
-                  <td className="px-4 py-3 font-medium">
+                  <td className="min-w-[9rem] px-4 py-3 font-medium">
                     <button type="button" onClick={(e) => { e.stopPropagation(); setViewingId(p.id) }}
                       className="text-left hover:text-violet-soft focus-visible:text-violet-soft focus-visible:outline-none">
                       {p.client_name}
                     </button>
                   </td>
                   <td className="px-4 py-3 text-muted">{p.business_name || '—'}</td>
-                  <td className="max-w-xs px-4 py-3 text-muted"><p className="line-clamp-2">{p.description || '—'}</p></td>
+                  <td className="min-w-[16rem] max-w-md px-4 py-3 text-muted">{p.description ? <ClampedText text={p.description} /> : '—'}</td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {p.project_services.length === 0 && <span className="text-muted">—</span>}
                       {p.project_services.map(({ service_id }) => (
-                        <span key={service_id} className="rounded-md bg-white/5 px-2 py-0.5 text-xs text-ghost/90">
-                          {serviceById.get(service_id)?.name ?? '…'}
-                        </span>
+                        <ServiceChip key={service_id} service={serviceById.get(service_id)} />
                       ))}
                     </div>
                   </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-right font-mono text-sm text-ghost">{formatEUR(projectPrice(p))}</td>
                   <td className="px-4 py-3">
                     <StatusMenu value={p.status} label={`Estado de ${p.client_name}`}
                       onChange={(status) => changeStatus(p, status)} />
@@ -242,25 +281,24 @@ export function Projects() {
           <textarea id="p-desc" rows={3} className="input resize-y" value={draft.description}
             onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
 
-          <fieldset className="mt-4">
-            <legend className="label">Servicios</legend>
-            {services.rows.length === 0 ? (
-              <p className="text-sm text-muted">No hay servicios. Créalos en la pantalla Servicios.</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {services.rows.map((s) => {
-                  const on = draft.serviceIds.includes(s.id)
-                  return (
-                    <button type="button" key={s.id} onClick={() => toggleService(s.id)} aria-pressed={on}
-                      className={`rounded-full border px-3 py-1.5 text-sm transition-colors sm:py-1 sm:text-xs ${
-                        on ? 'border-violet bg-violet/15 text-ghost' : 'border-white/10 text-muted hover:border-white/25'}`}>
-                      {s.name}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-          </fieldset>
+          <label id="p-services-label" className="label mt-4" htmlFor="p-services">Servicios</label>
+          {services.rows.length === 0 ? (
+            <p className="text-sm text-muted">No hay servicios. Créalos en la pantalla Servicios.</p>
+          ) : (
+            <Dropdown id="p-services" labelId="p-services-label" multiple placeholder="Selecciona uno o varios servicios"
+              options={services.rows.map((s) => ({
+                value: s.id, label: s.name, hint: formatEUR(Number(s.price)),
+                icon: <ServiceIcon name={s.icon} size={16} className="text-violet-soft" />,
+                chipIcon: <ServiceIcon name={s.icon} size={12} className="text-violet-soft" />,
+              }))}
+              value={draft.serviceIds} onChange={(serviceIds) => setDraft({ ...draft, serviceIds })} />
+          )}
+          {draft.serviceIds.length > 0 && (
+            <p className="mt-2 flex justify-between text-sm text-muted">
+              Precio total
+              <span className="font-mono text-ghost">{formatEUR(priceOf(draft.serviceIds))}</span>
+            </p>
+          )}
 
           {formError && <p className="mt-4 text-sm text-danger" role="alert">{formError}</p>}
           <div className="mt-6 flex justify-end gap-2">
@@ -273,7 +311,7 @@ export function Projects() {
       <Modal open={!!viewing} size="lg" title={viewing?.client_name ?? ''} onClose={() => setViewingId(null)}>
         {viewing && (
           <>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
               <div className="col-span-2 sm:col-span-1">
                 <dt className="eyebrow mb-1">Negocio</dt>
                 <dd className="text-sm">{viewing.business_name || '—'}</dd>
@@ -289,18 +327,20 @@ export function Projects() {
                 <dt className="eyebrow mb-1">Alta</dt>
                 <dd className="font-mono text-sm text-muted">{formatDate(viewing.created_at)}</dd>
               </div>
-              <div className="col-span-2 sm:col-span-3">
+              <div>
+                <dt className="eyebrow mb-1">Precio</dt>
+                <dd className="font-mono text-sm text-violet-soft">{formatEUR(projectPrice(viewing))}</dd>
+              </div>
+              <div className="col-span-2 sm:col-span-4">
                 <dt className="eyebrow mb-1.5">Servicios</dt>
                 <dd className="flex flex-wrap gap-1">
                   {viewing.project_services.length === 0 && <span className="text-sm text-muted">—</span>}
                   {viewing.project_services.map(({ service_id }) => (
-                    <span key={service_id} className="rounded-md bg-white/5 px-2 py-0.5 text-xs text-ghost/90">
-                      {serviceById.get(service_id)?.name ?? '…'}
-                    </span>
+                    <ServiceChip key={service_id} service={serviceById.get(service_id)} />
                   ))}
                 </dd>
               </div>
-              <div className="col-span-2 sm:col-span-3">
+              <div className="col-span-2 sm:col-span-4">
                 <dt className="eyebrow mb-1">Descripción</dt>
                 <dd className="whitespace-pre-line text-sm leading-relaxed text-ghost/90">{viewing.description || '—'}</dd>
               </div>

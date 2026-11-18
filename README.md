@@ -34,9 +34,13 @@ npm run dev
    `https://<usuario>.github.io/cLoakStudiosApp/`.
 4. En Supabase → **Authentication → URL Configuration**, añade esa URL como *Site URL*.
 
-Si cambias el nombre del repo, actualiza `base` en `vite.config.ts` y la ruta del favicon en `index.html`.
+Si cambias el nombre del repo, actualiza `base` en `vite.config.ts` y las rutas de los iconos en `index.html`.
 
 ## Marca
 
 Tokens en `src/styles/tokens.css` (paleta, tipografías y radios del brand guide).
-Logo: SVG original en `src/components/brand/` y `public/` (favicon + variantes monocromas).
+Logo: generado a partir de `cLoak Studios/layout/logo.jpeg` → `public/logo-mark.png` (sidebar/login, sin fondo), `favicon-32/64.png` y `apple-touch-icon.png` (icono de pantalla de inicio).
+
+### App móvil (PWA)
+
+La app se puede instalar en el móvil: pulsa en tu sesión (abajo en el menú) y sigue los pasos. Archivos: `public/manifest.webmanifest`, `public/sw.js` (solo cachea la interfaz; los datos de Supabase siempre van a la red) e iconos `public/icon-192.png`, `icon-512.png` e `icon-maskable-512.png`. El service worker solo se registra en producción. Si cambias `sw.js`, sube la versión de `CACHE` para que los móviles descarguen la nueva.

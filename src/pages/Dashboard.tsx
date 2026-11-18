@@ -7,7 +7,7 @@ import { STATUSES, STATUS_LABEL, type Project, type Service } from '../lib/types
 import { formatDate, formatEUR } from '../lib/format'
 import { PageHeader } from '../components/PageHeader'
 import { StateMessage } from '../components/StateMessage'
-import { StatusBadge, STATUS_STYLE } from '../components/StatusBadge'
+import { StatusBadge, StatusIcon, STATUS_STYLE } from '../components/StatusBadge'
 
 function Kpi({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
   return (
@@ -92,7 +92,7 @@ export function Dashboard() {
                     {STATUSES.map((s) => (
                       <li key={s} className="flex items-center justify-between text-sm">
                         <span className="flex items-center gap-2 text-muted">
-                          <span className="h-2.5 w-2.5 rounded-sm" style={{ background: STATUS_STYLE[s].hex }} />
+                          <StatusIcon status={s} size={15} className={STATUS_STYLE[s].text} />
                           {STATUS_LABEL[s]}
                         </span>
                         <span className="font-mono text-ghost">

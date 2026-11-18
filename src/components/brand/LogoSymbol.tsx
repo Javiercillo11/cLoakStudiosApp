@@ -1,40 +1,22 @@
-import { useId } from 'react'
-
-/** C abstracta formada por una cinta plegada. Idéntico a public/favicon.svg, viewBox 64×64. */
-export const SYMBOL_PATH =
-  'M58 6H30A26 26 0 0 0 30 58H58L50 46H30A14 14 0 0 1 30 18H50Z'
+/** Símbolo "C" de cLoak Studios (public/logo-mark.png, fondo transparente). */
+const SRC = `${import.meta.env.BASE_URL}logo-mark.png`
 
 interface Props {
   size?: number
-  /** Monocromo: usa currentColor (blanco sobre oscuro, negro sobre claro). */
-  mono?: boolean
   className?: string
   title?: string
 }
 
-export function LogoSymbol({ size = 32, mono = false, className, title }: Props) {
-  // useId devuelve ":r0:"; los ":" rompen la referencia url(#…) en algunos navegadores
-  const grad = `cloak-grad-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
+export function LogoSymbol({ size = 32, className = '', title }: Props) {
   return (
-    <svg
+    <img
+      src={SRC}
       width={size}
       height={size}
-      viewBox="0 0 64 64"
-      className={className}
-      role={title ? 'img' : undefined}
-      aria-label={title}
+      alt={title ?? ''}
       aria-hidden={title ? undefined : true}
-    >
-      {!mono && (
-        <defs>
-          <linearGradient id={grad} x1="8" y1="58" x2="58" y2="6" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#7C3AED" />
-            <stop offset="0.55" stopColor="#A855F7" />
-            <stop offset="1" stopColor="#D946EF" />
-          </linearGradient>
-        </defs>
-      )}
-      <path d={SYMBOL_PATH} fill={mono ? 'currentColor' : `url(#${grad})`} />
-    </svg>
+      draggable={false}
+      className={`shrink-0 select-none object-contain ${className}`}
+    />
   )
 }

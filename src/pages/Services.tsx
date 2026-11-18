@@ -3,13 +3,15 @@ import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useTable } from '../hooks/useTable'
 import type { Service } from '../lib/types'
 import { formatEUR } from '../lib/format'
+import { DEFAULT_SERVICE_ICON, ServiceIcon } from '../lib/serviceIcons'
+import { IconPicker } from '../components/IconPicker'
 import { PageHeader } from '../components/PageHeader'
 import { Modal } from '../components/Modal'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { StateMessage } from '../components/StateMessage'
 
-type Draft = { name: string; description: string; price: string }
-const EMPTY: Draft = { name: '', description: '', price: '' }
+type Draft = { name: string; description: string; price: string; icon: string }
+const EMPTY: Draft = { name: '', description: '', price: '', icon: DEFAULT_SERVICE_ICON }
 
 export function Services() {
   const { rows, loading, error, insert, update, remove } = useTable<Service>('services')
@@ -23,7 +25,7 @@ export function Services() {
   const openNew = () => { setEditing(null); setDraft(EMPTY); setFormError(null); setOpen(true) }
   const openEdit = (s: Service) => {
     setEditing(s)
-    setDraft({ name: s.name, description: s.description, price: String(s.price) })
+    setDraft({ name: s.name, description: s.description, price: String(s.price), icon: s.icon || DEFAULT_SERVICE_ICON })
     setFormError(null)
     setOpen(true)
   }
@@ -35,7 +37,7 @@ export function Services() {
     if (Number.isNaN(price) || price < 0) return setFormError('El precio debe ser un número positivo.')
     setSaving(true)
     try {
-      const values = { name: draft.name.trim(), description: draft.description.trim(), price }
+      const values = { name: draft.name.trim(), description: draft.description.trim(), price, icon: draft.icon }
       if (editing) await update(editing.id, values)
       else await insert(values)
       setOpen(false)
@@ -58,11 +60,16 @@ export function Services() {
       ) : rows.length === 0 ? (
         <StateMessage title="Aún no hay servicios">Añade el primero para poder asignarlo a tus proyectos.</StateMessage>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {rows.map((s) => (
             <article key={s.id} className="card group flex flex-col p-4 sm:p-5 transition-colors hover:border-violet/30">
               <div className="mb-3 flex items-start justify-between gap-3">
-                <h2 className="min-w-0 break-words text-lg font-semibold">{s.name}</h2>
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-control bg-violet/15 text-violet-soft">
+                    <ServiceIcon name={s.icon} size={20} />
+                  </span>
+                  <h2 className="min-w-0 break-words text-lg font-semibold">{s.name}</h2>
+                </div>
                 <span className="shrink-0 font-mono text-sm text-violet-soft">{formatEUR(Number(s.price))}</span>
               </div>
               <p className="flex-1 whitespace-pre-line text-sm text-muted">{s.description || '—'}</p>
@@ -78,8 +85,11 @@ export function Services() {
       <Modal open={open} title={editing ? 'Editar servicio' : 'Nuevo servicio'} onClose={() => setOpen(false)}>
         <form onSubmit={save} noValidate>
           <label className="label" htmlFor="s-name">Nombre</label>
-          <input id="s-name" className="input mb-4" value={draft.name}
-            onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+          <div className="mb-4 flex gap-2">
+            <IconPicker value={draft.icon} onChange={(icon) => setDraft({ ...draft, icon })} />
+            <input id="s-name" className="input" value={draft.name}
+              onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+          </div>
           <label className="label" htmlFor="s-desc">Descripción</label>
           <textarea id="s-desc" rows={4} className="input mb-4 resize-y" value={draft.description}
             onChange={(e) => setDraft({ ...draft, description: e.target.value })} />

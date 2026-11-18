@@ -1,8 +1,9 @@
 import { Suspense, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { Briefcase, LayoutDashboard, LogOut, Menu, StickyNote, Tag, X } from 'lucide-react'
+import { Briefcase, LayoutDashboard, LogOut, Menu, Smartphone, StickyNote, Tag, X } from 'lucide-react'
 import { Wordmark } from './brand/Wordmark'
 import { useAuth } from '../hooks/useAuth'
+import { InstallAppDialog } from './InstallAppDialog'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -14,6 +15,7 @@ const NAV = [
 export function Layout() {
   const { session, signOut } = useAuth()
   const [open, setOpen] = useState(false)
+  const [installOpen, setInstallOpen] = useState(false)
   const { pathname } = useLocation()
   useEffect(() => setOpen(false), [pathname])
 
@@ -43,10 +45,17 @@ export function Layout() {
         ))}
       </nav>
       <div className="mt-auto border-t border-white/5 pt-4">
-        <p className="eyebrow mb-1">Sesión</p>
-        <p className="mb-3 truncate text-sm text-muted" title={session?.user.email}>
-          {session?.user.email}
-        </p>
+        <button type="button" onClick={() => { setOpen(false); setInstallOpen(true) }}
+          className="group mb-2 flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left transition-colors hover:bg-white/5"
+          title="Instalar la app en el móvil">
+          <span className="min-w-0 flex-1">
+            <span className="eyebrow mb-1 block">Sesión</span>
+            <span className="block truncate text-sm text-muted group-hover:text-ghost">{session?.user.email}</span>
+            <span className="mt-1 flex items-center gap-1 text-xs text-violet-soft">
+              <Smartphone size={12} /> Instalar en el móvil
+            </span>
+          </span>
+        </button>
         <button onClick={signOut} className="btn-ghost w-full justify-start px-3">
           <LogOut size={16} /> Cerrar sesión
         </button>
@@ -72,6 +81,8 @@ export function Layout() {
         </div>
       )}
 
+      <InstallAppDialog open={installOpen} onClose={() => setInstallOpen(false)} />
+
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/5 bg-obsidian/90 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur lg:hidden">
           <button onClick={() => setOpen(true)} className="btn-icon -ml-2" aria-label="Abrir menú">
@@ -79,7 +90,7 @@ export function Layout() {
           </button>
           <Wordmark />
         </header>
-        <main className="mx-auto w-full max-w-[var(--content-width)] flex-1 px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6 sm:px-8 sm:py-8 lg:py-12">
+        <main className="mx-auto w-full max-w-[var(--content-width)] flex-1 px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
           <Suspense fallback={<p className="eyebrow">Cargando…</p>}>
             <Outlet />
           </Suspense>

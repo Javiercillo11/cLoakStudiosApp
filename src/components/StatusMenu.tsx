@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Check, ChevronDown } from 'lucide-react'
 import { STATUSES, STATUS_LABEL, type ProjectStatus } from '../lib/types'
-import { STATUS_STYLE } from './StatusBadge'
+import { STATUS_STYLE, StatusIcon } from './StatusBadge'
 
 interface Props {
   value: ProjectStatus
@@ -99,7 +99,7 @@ export function StatusMenu({ value, onChange, label }: Props) {
         aria-label={label}
         className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full py-1.5 pl-2.5 pr-2 text-xs sm:py-1 font-medium ring-1 ring-inset ring-transparent transition hover:ring-white/15 focus-visible:outline-none focus-visible:ring-violet ${s.badge}`}
       >
-        <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
+        <StatusIcon status={value} />
         {STATUS_LABEL[value]}
         <ChevronDown size={12} className={`opacity-70 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
@@ -130,7 +130,7 @@ export function StatusMenu({ value, onChange, label }: Props) {
                 className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-left text-sm sm:py-2 transition-colors focus:outline-none ${
                   i === active ? 'bg-white/5 text-ghost' : 'text-muted'}`}
               >
-                <span className={`h-2 w-2 rounded-full ${STATUS_STYLE[st].dot}`} />
+                <StatusIcon status={st} size={15} className={STATUS_STYLE[st].text} />
                 <span className="flex-1">{STATUS_LABEL[st]}</span>
                 {selected && <Check size={14} className="text-violet-soft" />}
               </button>

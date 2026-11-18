@@ -16,5 +16,5 @@
 
   --radius-card: 1rem;
   --radius-control: 0.75rem;
-  --content-width: 72rem;
+  --content-width: 120rem; /* casi todo el ancho; solo limita en monitores ultrapanorámicos */
 }

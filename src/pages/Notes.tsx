@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { Briefcase, Plus, Search, Trash2 } from 'lucide-react'
+import { Briefcase, Plus, StickyNote, Trash2 } from 'lucide-react'
 import { useTable } from '../hooks/useTable'
 import type { Note, NoteColor, Project } from '../lib/types'
 import { NOTE_COLORS } from '../lib/noteColors'
@@ -7,6 +7,7 @@ import { formatDate } from '../lib/format'
 import { PageHeader } from '../components/PageHeader'
 import { StateMessage } from '../components/StateMessage'
 import { Modal } from '../components/Modal'
+import { Dropdown } from '../components/Dropdown'
 
 type ProjectRef = Pick<Project, 'id' | 'client_name' | 'business_name' | 'created_at'>
 
@@ -59,26 +60,28 @@ function NewNoteDialog({ open, projects, onClose, onCreate }: {
   onClose: () => void
   onCreate: (values: Partial<Note>) => Promise<void>
 }) {
-  const [projectId, setProjectId] = useState<string | null>(null)
+  const [projectId, setProjectId] = useState('')
   const [content, setContent] = useState('')
   const [color, setColor] = useState<NoteColor>('violet')
-  const [query, setQuery] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  const q = query.trim().toLowerCase()
-  const filtered = q
-    ? projects.filter((p) => [p.client_name, p.business_name].some((v) => v.toLowerCase().includes(q)))
-    : projects
+  const options = [
+    { value: '', label: 'Nota libre', hint: 'Sin proyecto asociado', icon: <StickyNote size={16} className="shrink-0 text-muted" /> },
+    ...projects.map((p) => ({
+      value: p.id, label: p.client_name, hint: p.business_name || undefined,
+      icon: <Briefcase size={16} className="shrink-0 text-violet-soft" />,
+    })),
+  ]
 
-  const reset = () => { setProjectId(null); setContent(''); setColor('violet'); setQuery(''); setError(null) }
+  const reset = () => { setProjectId(''); setContent(''); setColor('violet'); setError(null) }
   const close = () => { reset(); onClose() }
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     setSaving(true)
     try {
-      await onCreate({ project_id: projectId, content: content.trim(), color })
+      await onCreate({ project_id: projectId || null, content: content.trim(), color })
       close()
     } catch (err) {
       setError((err as Error).message)
@@ -87,42 +90,11 @@ function NewNoteDialog({ open, projects, onClose, onCreate }: {
     }
   }
 
-  const option = (id: string | null, title: string, subtitle?: string) => {
-    const on = projectId === id
-    return (
-      <label key={id ?? 'none'}
-        className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-control border px-3 py-2.5 transition-colors ${
-          on ? 'border-violet bg-violet/15' : 'border-white/10 hover:border-white/25'}`}>
-        <input type="radio" name="note-project" className="sr-only" checked={on} onChange={() => setProjectId(id)} />
-        <span className={`grid h-4 w-4 shrink-0 place-items-center rounded-full border ${on ? 'border-violet' : 'border-white/30'}`}>
-          {on && <span className="h-2 w-2 rounded-full bg-violet" />}
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className={`block truncate text-sm ${on ? 'text-ghost' : 'text-ghost/90'}`}>{title}</span>
-          {subtitle && <span className="block truncate text-xs text-muted">{subtitle}</span>}
-        </span>
-      </label>
-    )
-  }
-
   return (
     <Modal open={open} title="Nueva nota" onClose={close}>
       <form onSubmit={submit} noValidate>
-        <fieldset>
-          <legend className="label">¿A qué va asociada?</legend>
-          {projects.length > 5 && (
-            <div className="relative mb-2">
-              <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-              <input type="search" placeholder="Buscar proyecto…" aria-label="Buscar proyecto"
-                className="input pl-8" value={query} onChange={(e) => setQuery(e.target.value)} />
-            </div>
-          )}
-          <div className="flex max-h-[40dvh] flex-col gap-1.5 overflow-y-auto overscroll-contain sm:max-h-60 sm:pr-1">
-            {option(null, 'Nota libre', 'Sin proyecto asociado')}
-            {filtered.map((p) => option(p.id, p.client_name, p.business_name || undefined))}
-            {q && filtered.length === 0 && <p className="px-1 py-2 text-sm text-muted">Ningún proyecto coincide.</p>}
-          </div>
-        </fieldset>
+        <label id="n-project-label" className="label" htmlFor="n-project">¿A qué va asociada?</label>
+        <Dropdown id="n-project" labelId="n-project-label" options={options} value={projectId} onChange={setProjectId} />
 
         <label className="label mt-4" htmlFor="n-content">Contenido <span className="text-muted">(opcional)</span></label>
         <textarea id="n-content" rows={3} className="input resize-y" placeholder="Escribe algo…"
@@ -167,7 +139,7 @@ export function Notes() {
       ) : rows.length === 0 ? (
         <StateMessage title="Sin notas">Apunta ideas, tareas o recordatorios rápidos.</StateMessage>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           {rows.map((n) => (
             <NoteCard key={n.id} note={n} project={n.project_id ? projectById.get(n.project_id) : undefined}
               onSave={(v) => update(n.id, v)} onDelete={() => remove(n.id)} />

@@ -8,6 +8,7 @@ create table public.services (
   user_id uuid not null default auth.uid() references auth.users on delete cascade,
   name text not null,
   description text not null default '',
+  icon text not null default 'other',
   price numeric(10,2) not null default 0,
   created_at timestamptz not null default now()
 );
