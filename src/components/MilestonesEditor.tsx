@@ -106,27 +106,27 @@ export function MilestonesEditor({ method, onMethodChange, methodError, mileston
                     </div>
                   </div>
                   <FieldError id={`${errId}-pct-err`} message={pErr} />
-                  <div className="mt-2 flex items-end gap-3">
-                    <div className="min-w-0 flex-1">
-                      <label className="label" htmlFor={`${errId}-date`}>Fecha</label>
-                      <input id={`${errId}-date`} type="date" className="input [color-scheme:dark]" value={m.dueDate ?? ''}
-                        onChange={(e) => patch(m.id, { dueDate: e.target.value || null })} />
-                    </div>
+                  <div className="mt-2">
+                    <label className="label" htmlFor={`${errId}-date`}>Fecha</label>
+                    {/* min-w-0 + appearance-none: en iOS el selector de fecha no respeta el ancho y se salía de la fila */}
+                    <input id={`${errId}-date`} type="date"
+                      className="input block min-w-0 appearance-none text-left [color-scheme:dark] [&::-webkit-date-and-time-value]:text-left"
+                      value={m.dueDate ?? ''} onChange={(e) => patch(m.id, { dueDate: e.target.value || null })} />
+                  </div>
+                  <div className="-mb-1 mt-2 flex items-center gap-3 border-t border-white/5 pt-1">
                     <label className="flex min-h-11 shrink-0 cursor-pointer items-center gap-2 text-sm sm:min-h-10">
                       <input type="checkbox" className="h-4 w-4 accent-[#4ADE80]" checked={m.paid}
                         onChange={(e) => patch(m.id, { paid: e.target.checked, paidAt: e.target.checked ? new Date().toISOString() : null })} />
                       Pagado
                     </label>
-                  </div>
-                  <div className="-mb-1 mt-2 flex items-center justify-between gap-2 border-t border-white/5 pt-1">
-                    <span className="flex items-baseline gap-2">
+                    <span className="ml-auto flex min-w-0 items-baseline gap-2">
                       <span className="text-xs text-muted">Importe</span>
-                      <span className={`font-mono text-sm ${m.paid ? 'text-success' : 'text-ghost'}`}>
+                      <span className={`truncate font-mono text-sm ${m.paid ? 'text-success' : 'text-ghost'}`}>
                         {h !== null && h > 0 && h <= FULL ? formatEUR(summary.amounts[i]) : '—'}
                       </span>
                     </span>
                     <button type="button" onClick={() => onChange(milestones.filter((x) => x.id !== m.id))}
-                      className="btn-icon -mr-2 hover:text-danger" aria-label={`Eliminar hito ${i + 1}`}><Trash2 size={16} /></button>
+                      className="btn-icon -mr-2 shrink-0 hover:text-danger" aria-label={`Eliminar hito ${i + 1}`}><Trash2 size={16} /></button>
                   </div>
                 </li>
               )

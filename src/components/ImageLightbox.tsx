@@ -14,14 +14,14 @@ export function ImageLightbox({ url, name, onClose, onDownload }: Props) {
   useEffect(() => {
     const d = ref.current
     if (!d) return
-    if (url && !d.open) d.showModal()
+    if (url && !d.open) { d.showModal(); d.focus({ preventScroll: true }) }
     if (!url && d.open) d.close()
   }, [url])
 
   return (
-    <dialog ref={ref} onClose={onClose} aria-label={name}
+    <dialog ref={ref} tabIndex={-1} onClose={onClose} aria-label={name}
       onClick={(e) => { if (e.target === e.currentTarget || (e.target as HTMLElement).dataset.backdrop) onClose() }}
-      className="m-0 h-dvh max-h-none w-screen max-w-none bg-black/90 p-0 text-ghost backdrop:bg-black/80">
+      className="m-0 outline-none focus-visible:ring-0 h-dvh max-h-none w-screen max-w-none bg-black/90 p-0 text-ghost backdrop:bg-black/80">
       {url && (
         <div data-backdrop="1" className="flex h-full flex-col">
           <div className="flex items-center gap-2 px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
@@ -29,7 +29,7 @@ export function ImageLightbox({ url, name, onClose, onDownload }: Props) {
             <button type="button" onClick={onDownload} className="btn-icon" aria-label={`Descargar ${name}`} title="Descargar">
               <Download size={18} />
             </button>
-            <button type="button" onClick={onClose} className="btn-icon" aria-label="Cerrar vista ampliada" autoFocus>
+            <button type="button" onClick={onClose} className="btn-icon" aria-label="Cerrar vista ampliada">
               <X size={20} />
             </button>
           </div>

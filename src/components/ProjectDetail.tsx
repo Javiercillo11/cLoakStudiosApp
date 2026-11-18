@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
-import { Briefcase, CheckCircle2, Circle, FileSignature, MapPin, Paperclip, Pencil, Phone, Receipt, StickyNote, UserRound } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
+import { Briefcase, CheckCircle2, ChevronRight, Circle, FileSignature, MapPin, Paperclip, Pencil, Phone, Receipt, StickyNote, UserRound } from 'lucide-react'
 import { PAYMENT_METHOD_LABEL, type Note, type PaymentMilestone, type Project, type ProjectStatus, type Service } from '../lib/types'
 import { paymentSummary } from '../lib/milestones'
 import { priceBreakdown } from '../lib/pricing'
@@ -7,6 +7,8 @@ import { formatDate, formatEUR, formatPct } from '../lib/format'
 import { ServiceIcon } from '../lib/serviceIcons'
 import { StatusMenu } from './StatusMenu'
 import { NoteCard } from './NoteCard'
+import { NoteDialog } from './NoteDialog'
+import { NOTE_COLORS } from '../lib/noteColors'
 import { PaymentSummary } from './PaymentSummary'
 import { AttachmentsPanel } from './AttachmentsPanel'
 import { PaymentMethodIcon } from './PaymentMethodIcon'
@@ -49,6 +51,9 @@ interface Props {
 
 export function ProjectDetail({ project: p, serviceById, notes, notesError, onStatusChange, onTogglePaid, onNoteSave, onNoteDelete, onEdit, onClose }: Props) {
   const milestones = p.payment_milestones ?? []
+  /** Nota abierta en grande (móvil) */
+  const [openNoteId, setOpenNoteId] = useState<string | null>(null)
+  const openNote = notes.find((n) => n.id === openNoteId) ?? null
   const extras = p.extra_charges ?? []
   const servicesSum = p.project_services.reduce((sum, x) => sum + Number(serviceById.get(x.service_id)?.price ?? 0), 0)
   const price = priceBreakdown(servicesSum, extras, Number(p.discount_pct ?? 0))
@@ -198,12 +203,35 @@ export function ProjectDetail({ project: p, serviceById, notes, notesError, onSt
         ) : notes.length === 0 ? (
           <p className="text-sm text-muted">Este proyecto no tiene notas. Créalas desde «Editar» o desde la pantalla Notas.</p>
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {notes.map((n) => (
-              <li key={n.id}><NoteCard note={n} compact onSave={(v) => onNoteSave(n.id, v)} onDelete={() => onNoteDelete(n)} /></li>
-            ))}
-          </ul>
+          <>
+            {/* Móvil: vista previa; al pulsar se abre la nota completa para leerla y editarla */}
+            <ul className="flex flex-col gap-2 md:hidden">
+              {notes.map((n) => (
+                <li key={n.id}>
+                  <button type="button" onClick={() => setOpenNoteId(n.id)}
+                    className={`block w-full rounded-card border p-3.5 text-left transition-colors active:brightness-125 ${(NOTE_COLORS[n.color] ?? NOTE_COLORS.violet).card}`}>
+                    <span className={`line-clamp-3 whitespace-pre-line text-sm leading-relaxed [overflow-wrap:anywhere] ${n.content.trim() ? 'text-ghost' : 'text-muted'}`}>
+                      {n.content.trim() || 'Nota vacía'}
+                    </span>
+                    <span className="mt-2 flex items-center justify-between font-mono text-[11px] text-muted">
+                      {formatDate(n.created_at)}
+                      <span className="flex items-center gap-1 font-body text-violet-soft">Abrir <ChevronRight size={13} /></span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {/* Escritorio: notas editables en línea, como hasta ahora */}
+            <ul className="hidden gap-3 md:grid md:grid-cols-2">
+              {notes.map((n) => (
+                <li key={n.id}><NoteCard note={n} compact onSave={(v) => onNoteSave(n.id, v)} onDelete={() => onNoteDelete(n)} /></li>
+              ))}
+            </ul>
+          </>
         )}
+        <NoteDialog note={openNote} onClose={() => setOpenNoteId(null)}
+          onSave={(v) => onNoteSave(openNote!.id, v)}
+          onDelete={() => { const n = openNote; setOpenNoteId(null); if (n) onNoteDelete(n) }} />
       </Block>
 
       <Block id="pd-files" title="Ficheros adjuntos" icon={<Paperclip size={16} />}>
