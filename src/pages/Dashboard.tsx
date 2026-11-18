@@ -1,10 +1,11 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight } from 'lucide-react'
+import { AlertTriangle, ArrowRight, HardDrive } from 'lucide-react'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useTable } from '../hooks/useTable'
 import { STATUSES, STATUS_LABEL, type Project, type Service } from '../lib/types'
-import { formatDate, formatEUR } from '../lib/format'
+import { formatBytes, formatDate, formatEUR, formatPct } from '../lib/format'
+import { STORAGE_QUOTA_BYTES, STORAGE_WARN_RATIO, storageUsedBytes } from '../lib/attachments'
 import { PageHeader } from '../components/PageHeader'
 import { StateMessage } from '../components/StateMessage'
 import { StatusBadge, StatusIcon, STATUS_STYLE } from '../components/StatusBadge'
@@ -19,15 +20,89 @@ function Kpi({ label, value, hint }: { label: string; value: string | number; hi
   )
 }
 
+/** Aviso cuando los ficheros adjuntos superan el 80 % de la cuota de almacenamiento */
+function StorageWarning({ used }: { used: number | null }) {
+  if (used === null) return null
+  const ratio = used / STORAGE_QUOTA_BYTES
+  if (ratio < STORAGE_WARN_RATIO) return null
+  const critical = ratio >= 0.95
+  const pct = Math.min(100, Math.round(ratio * 100))
+  return (
+    <section role="alert" aria-labelledby="storage-warning"
+      className={`card flex flex-col gap-3 border p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-5 ${
+        critical ? 'border-danger/40 bg-danger/10' : 'border-[#F59E0B]/40 bg-[#F59E0B]/10'}`}>
+      <AlertTriangle size={22} className={`shrink-0 ${critical ? 'text-danger' : 'text-[#FCD34D]'}`} aria-hidden />
+      <div className="min-w-0 flex-1">
+        <h2 id="storage-warning" className="text-base font-semibold">
+          {ratio >= 1 ? 'Almacenamiento lleno' : `Almacenamiento al ${pct} %`}
+        </h2>
+        <p className="mt-0.5 text-sm text-muted">
+          Los ficheros adjuntos ocupan {formatBytes(used)} de {formatBytes(STORAGE_QUOTA_BYTES)}.
+          {' '}Elimina ficheros que ya no necesites o amplía el plan de almacenamiento.
+        </p>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10" role="progressbar"
+          aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Uso del almacenamiento">
+          <div className={critical ? 'h-full bg-danger' : 'h-full bg-[#F59E0B]'} style={{ width: `${pct}%` }} />
+        </div>
+      </div>
+      <Link to="/documentacion" className="btn-ghost shrink-0 self-start sm:self-center">Revisar ficheros <ArrowRight size={16} /></Link>
+    </section>
+  )
+}
+
+const mbFmt = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1, useGrouping: 'always' } as unknown as Intl.NumberFormatOptions)
+const toMB = (bytes: number) => mbFmt.format(bytes / 1024 / 1024)
+
+/** Uso del almacenamiento de ficheros: % de la cuota y MB usados */
+function StorageCard({ used, error }: { used: number | null; error: boolean }) {
+  const ratio = used === null ? 0 : used / STORAGE_QUOTA_BYTES
+  const pct = Math.min(100, ratio * 100)
+  const tone = ratio >= 0.95 ? 'bg-danger' : ratio >= STORAGE_WARN_RATIO ? 'bg-[#F59E0B]' : 'bg-violet'
+  return (
+    <section className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-6 sm:p-5" aria-labelledby="storage-usage">
+      <div className="flex items-center gap-3 sm:w-56 sm:shrink-0">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-control bg-violet/15 text-violet-soft">
+          <HardDrive size={17} aria-hidden />
+        </span>
+        <div className="min-w-0">
+          <h2 id="storage-usage" className="eyebrow">Almacenamiento</h2>
+          <p className="font-display text-xl font-semibold tracking-tight">
+            {error ? '—' : used === null ? '…' : formatPct(pct < 10 ? Math.round(pct * 10) / 10 : Math.round(pct))}
+          </p>
+        </div>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="h-2 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-label="Uso del almacenamiento"
+          aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)}>
+          <div className={`h-full rounded-full transition-[width] ${tone}`} style={{ width: `${used ? Math.max(pct, 0.5) : 0}%` }} />
+        </div>
+        <p className="mt-2 text-sm text-muted">
+          {error ? 'No se pudo calcular el uso del almacenamiento.' : (
+            <><span className="font-mono text-ghost">{used === null ? '…' : toMB(used)} MB</span> usados de {toMB(STORAGE_QUOTA_BYTES)} MB en ficheros adjuntos</>
+          )}
+        </p>
+      </div>
+    </section>
+  )
+}
+
 const monthFmt = new Intl.DateTimeFormat('es-ES', { month: 'short' })
 
 export function Dashboard() {
   const projects = useTable<Project>('projects', '*, project_services(service_id)')
   const services = useTable<Service>('services')
+  const [storageUsed, setStorageUsed] = useState<number | null>(null)
+  const [storageError, setStorageError] = useState(false)
+  useEffect(() => {
+    let alive = true
+    storageUsedBytes()
+      .then((n) => { if (alive) setStorageUsed(n) })
+      .catch(() => { if (alive) setStorageError(true) })
+    return () => { alive = false }
+  }, [])
 
   const stats = useMemo(() => {
-    const price = new Map(services.rows.map((s) => [s.id, Number(s.price)]))
-    const value = (p: Project) => p.project_services.reduce((sum, x) => sum + (price.get(x.service_id) ?? 0), 0)
+    const value = (p: Project) => Number(p.total_price ?? 0)
     const byStatus = Object.fromEntries(STATUSES.map((s) => [s, 0])) as Record<string, number>
     let billed = 0
     let pipeline = 0
@@ -67,12 +142,15 @@ export function Dashboard() {
         <StateMessage title="Cargando…" />
       ) : (
         <div className="flex flex-col gap-4 sm:gap-6">
+          <StorageWarning used={storageUsed} />
           <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             <Kpi label="Proyectos" value={total} hint={`${stats.byStatus.en_desarrollo} en desarrollo`} />
-            <Kpi label="Facturado" value={formatEUR(stats.billed)} hint="Servicios de proyectos desplegados" />
+            <Kpi label="Facturado" value={formatEUR(stats.billed)} hint="Precio de proyectos desplegados" />
             <Kpi label="Pipeline" value={formatEUR(stats.pipeline)} hint="Nuevos + en desarrollo" />
             <Kpi label="Servicios" value={services.rows.length} hint={`Precio medio ${formatEUR(stats.avgTicket)}`} />
           </section>
+
+          <StorageCard used={storageUsed} error={storageError} />
 
           <div className="grid gap-4 sm:gap-6 lg:grid-cols-5">
             <section className="card p-5 lg:col-span-2" aria-labelledby="by-status">

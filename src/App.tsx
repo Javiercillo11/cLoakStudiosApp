@@ -33,6 +33,7 @@ const Dashboard = lazyPage(() => import('./pages/Dashboard'), 'Dashboard')
 const Projects = lazyPage(() => import('./pages/Projects'), 'Projects')
 const Services = lazyPage(() => import('./pages/Services'), 'Services')
 const Notes = lazyPage(() => import('./pages/Notes'), 'Notes')
+const Documentation = lazyPage(() => import('./pages/Documentation'), 'Documentation')
 
 export default function App() {
   return (
@@ -45,6 +46,7 @@ export default function App() {
             <Route path="proyectos" element={<Projects />} />
             <Route path="servicios" element={<Services />} />
             <Route path="notas" element={<Notes />} />
+            <Route path="documentacion" element={<Documentation />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -50,7 +50,7 @@ export function InstallAppDialog({ open, onClose }: { open: boolean; onClose: ()
   }
 
   return (
-    <Modal open={open} title="Instalar la app" onClose={onClose}>
+    <Modal open={open} size="sm" title="Instalar la app" onClose={onClose}>
       <div className="mb-5 flex items-center gap-4">
         <img src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" width={64} height={64}
           className="h-16 w-16 shrink-0 rounded-[22%] shadow-lg shadow-black/40" />

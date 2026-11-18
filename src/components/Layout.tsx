@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { Briefcase, LayoutDashboard, LogOut, Menu, Smartphone, StickyNote, Tag, X } from 'lucide-react'
+import { BookOpen, Briefcase, LayoutDashboard, LogOut, Menu, Smartphone, StickyNote, Tag, X } from 'lucide-react'
 import { Wordmark } from './brand/Wordmark'
 import { useAuth } from '../hooks/useAuth'
 import { InstallAppDialog } from './InstallAppDialog'
@@ -10,6 +10,7 @@ const NAV = [
   { to: '/proyectos', label: 'Proyectos', icon: Briefcase },
   { to: '/servicios', label: 'Servicios', icon: Tag },
   { to: '/notas', label: 'Notas', icon: StickyNote },
+  { to: '/documentacion', label: 'Documentación', icon: BookOpen },
 ]
 
 export function Layout() {
