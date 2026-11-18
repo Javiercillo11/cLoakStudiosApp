@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { Briefcase, Plus, StickyNote } from 'lucide-react'
+import { Briefcase, ChevronDown, Plus, StickyNote } from 'lucide-react'
 import { useTable } from '../hooks/useTable'
 import type { Note, NoteColor, Project } from '../lib/types'
 import { NOTE_COLORS } from '../lib/noteColors'
@@ -79,11 +79,26 @@ function NewNoteDialog({ open, projects, onClose, onCreate }: {
   )
 }
 
+const COLLAPSED_KEY = 'cloak-notes-collapsed'
+
 export function Notes() {
   const { rows, loading, error, insert, update, remove } = useTable<Note>('notes')
   const projects = useTable<ProjectRef>('projects', 'id, client_name, business_name, created_at')
   const projectById = useMemo(() => new Map(projects.rows.map((p) => [p.id, p])), [projects.rows])
   const [creating, setCreating] = useState(false)
+
+  // Grupos minimizados (se recuerdan en este navegador)
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem(COLLAPSED_KEY) ?? '[]') as string[]) } catch { return new Set() }
+  })
+  const toggleGroup = (key: string) =>
+    setCollapsed((cur) => {
+      const next = new Set(cur)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...next])) } catch { /* sin almacenamiento */ }
+      return next
+    })
 
   // Grupos: un bloque por proyecto (el de la nota más reciente primero) y al final las notas libres.
   // Las notas ya vienen ordenadas por fecha descendente.
@@ -119,7 +134,7 @@ export function Notes() {
         <div className="flex flex-col gap-8">
           {groups.map((g) => (
             <section key={g.key} aria-labelledby={`notes-${g.key}`}>
-              <header className="mb-3 flex items-center gap-3 border-b border-white/5 pb-2">
+              <header className={`flex items-center gap-3 border-b border-white/5 pb-2 ${collapsed.has(g.key) ? '' : 'mb-3'}`}>
                 <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-control ${g.free ? 'bg-white/5 text-muted' : 'bg-violet/15 text-violet-soft'}`}>
                   {g.free ? <StickyNote size={16} /> : <Briefcase size={16} />}
                 </span>
@@ -128,8 +143,17 @@ export function Notes() {
                   {g.subtitle && <p className="truncate text-xs text-muted">{g.subtitle}</p>}
                 </div>
                 <span className="shrink-0 font-mono text-xs text-muted">{g.notes.length}</span>
+                <button type="button" onClick={() => toggleGroup(g.key)}
+                  aria-expanded={!collapsed.has(g.key)} aria-controls={`notes-list-${g.key}`}
+                  aria-label={`${collapsed.has(g.key) ? 'Mostrar' : 'Ocultar'} notas de ${g.title}`}
+                  title={collapsed.has(g.key) ? 'Mostrar notas' : 'Ocultar notas'}
+                  className="btn-icon -mr-2 shrink-0">
+                  <ChevronDown size={18} className={`transition-transform ${collapsed.has(g.key) ? '-rotate-90' : ''}`} />
+                </button>
               </header>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+              {/* la clase "grid" anularía el atributo hidden, así que se usa display condicional */}
+              <div id={`notes-list-${g.key}`}
+                className={`${collapsed.has(g.key) ? 'hidden' : 'grid'} gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5`}>
                 {g.notes.map((n) => (
                   <NoteCard key={n.id} note={n} onSave={(v) => update(n.id, v)} onDelete={() => remove(n.id)} />
                 ))}
