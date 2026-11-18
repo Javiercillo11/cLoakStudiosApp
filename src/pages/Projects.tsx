@@ -3,7 +3,6 @@ import { ArrowDown, ArrowUp, ArrowUpDown, ChevronRight, Layers, Pencil, Plus, Se
 import { useTable } from '../hooks/useTable'
 import { supabase } from '../lib/supabase'
 import { STATUSES, STATUS_LABEL, type Note, type Project, type ProjectStatus, type Service } from '../lib/types'
-import { NOTE_COLORS } from '../lib/noteColors'
 import { ServiceIcon } from '../lib/serviceIcons'
 import { formatDate, formatEUR } from '../lib/format'
 import { PageHeader } from '../components/PageHeader'
@@ -14,6 +13,7 @@ import { StatusMenu } from '../components/StatusMenu'
 import { StatusIcon, STATUS_STYLE } from '../components/StatusBadge'
 import { Dropdown } from '../components/Dropdown'
 import { ClampedText } from '../components/ClampedText'
+import { NoteCard } from '../components/NoteCard'
 
 type Draft = {
   client_name: string
@@ -54,6 +54,7 @@ export function Projects() {
   const [saving, setSaving] = useState(false)
   const [toDelete, setToDelete] = useState<Project | null>(null)
   const [viewingId, setViewingId] = useState<string | null>(null)
+  const [noteToDelete, setNoteToDelete] = useState<Note | null>(null)
   const viewing = projects.rows.find((p) => p.id === viewingId) ?? null
   const viewingNotes = viewing ? notes.rows.filter((n) => n.project_id === viewing.id) : []
 
@@ -311,7 +312,7 @@ export function Projects() {
       <Modal open={!!viewing} size="lg" title={viewing?.client_name ?? ''} onClose={() => setViewingId(null)}>
         {viewing && (
           <>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
               <div className="col-span-2 sm:col-span-1">
                 <dt className="eyebrow mb-1">Negocio</dt>
                 <dd className="text-sm">{viewing.business_name || '—'}</dd>
@@ -327,11 +328,11 @@ export function Projects() {
                 <dt className="eyebrow mb-1">Alta</dt>
                 <dd className="font-mono text-sm text-muted">{formatDate(viewing.created_at)}</dd>
               </div>
-              <div>
-                <dt className="eyebrow mb-1">Precio</dt>
-                <dd className="font-mono text-sm text-violet-soft">{formatEUR(projectPrice(viewing))}</dd>
+              <div className="col-span-2 sm:col-span-3">
+                <dt className="eyebrow mb-1">Descripción</dt>
+                <dd className="whitespace-pre-line text-sm leading-relaxed text-ghost/90 [overflow-wrap:anywhere]">{viewing.description || '—'}</dd>
               </div>
-              <div className="col-span-2 sm:col-span-4">
+              <div className="col-span-2 sm:col-span-3">
                 <dt className="eyebrow mb-1.5">Servicios</dt>
                 <dd className="flex flex-wrap gap-1">
                   {viewing.project_services.length === 0 && <span className="text-sm text-muted">—</span>}
@@ -340,9 +341,9 @@ export function Projects() {
                   ))}
                 </dd>
               </div>
-              <div className="col-span-2 sm:col-span-4">
-                <dt className="eyebrow mb-1">Descripción</dt>
-                <dd className="whitespace-pre-line text-sm leading-relaxed text-ghost/90">{viewing.description || '—'}</dd>
+              <div className="col-span-2 sm:col-span-3">
+                <dt className="eyebrow mb-1">Precio</dt>
+                <dd className="font-mono text-sm text-violet-soft">{formatEUR(projectPrice(viewing))}</dd>
               </div>
             </dl>
 
@@ -358,11 +359,8 @@ export function Projects() {
               ) : (
                 <ul className="grid gap-3 sm:grid-cols-2">
                   {viewingNotes.map((n) => (
-                    <li key={n.id} className={`rounded-card border p-3 ${(NOTE_COLORS[n.color] ?? NOTE_COLORS.violet).card}`}>
-                      <p className="whitespace-pre-line text-sm leading-relaxed">
-                        {n.content || <span className="text-muted">Nota vacía</span>}
-                      </p>
-                      <p className="mt-2 font-mono text-[11px] text-muted">{formatDate(n.created_at)}</p>
+                    <li key={n.id}>
+                      <NoteCard note={n} compact onSave={(v) => notes.update(n.id, v)} onDelete={() => setNoteToDelete(n)} />
                     </li>
                   ))}
                 </ul>
@@ -376,6 +374,11 @@ export function Projects() {
           </>
         )}
       </Modal>
+
+      <ConfirmDialog open={!!noteToDelete} title="Eliminar nota"
+        message="¿Eliminar esta nota? Esta acción no se puede deshacer."
+        onCancel={() => setNoteToDelete(null)}
+        onConfirm={async () => { if (noteToDelete) await notes.remove(noteToDelete.id); setNoteToDelete(null) }} />
 
       <ConfirmDialog open={!!toDelete} title="Eliminar proyecto"
         message={`¿Eliminar el proyecto de "${toDelete?.client_name}"? Esta acción no se puede deshacer.`}

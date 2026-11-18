@@ -198,7 +198,7 @@ export function Dropdown(props: SingleProps | MultiProps) {
           )}
           <ul ref={listRef} role="listbox" tabIndex={-1} aria-labelledby={labelId} aria-multiselectable={props.multiple || undefined}
             aria-activedescendant={visible[active] ? `${id}-opt-${active}` : undefined}
-            className="overflow-y-auto overscroll-contain p-1 focus:outline-none">
+            className="scroll-thin overflow-y-auto overscroll-contain p-1 focus:outline-none">
             {visible.length === 0 && <li className="px-3 py-2.5 text-sm text-muted">{q ? 'Sin resultados' : emptyText}</li>}
             {visible.map((o, i) => {
               const on = isOn(o.value)

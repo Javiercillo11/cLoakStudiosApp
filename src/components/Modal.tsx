@@ -63,7 +63,7 @@ export function Modal({ open, title, onClose, children, size = 'md' }: Props) {
               <X size={18} />
             </button>
           </div>
-          <div className="overflow-y-auto overscroll-contain px-5 pb-5 sm:px-6 sm:pb-6">
+          <div className="scroll-thin overflow-y-auto overflow-x-hidden overscroll-contain px-5 pb-5 sm:px-6 sm:pb-6">
             {children}
           </div>
         </div>

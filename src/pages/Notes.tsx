@@ -1,58 +1,15 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { Briefcase, Plus, StickyNote, Trash2 } from 'lucide-react'
+import { Briefcase, Plus, StickyNote } from 'lucide-react'
 import { useTable } from '../hooks/useTable'
 import type { Note, NoteColor, Project } from '../lib/types'
 import { NOTE_COLORS } from '../lib/noteColors'
-import { formatDate } from '../lib/format'
 import { PageHeader } from '../components/PageHeader'
 import { StateMessage } from '../components/StateMessage'
 import { Modal } from '../components/Modal'
 import { Dropdown } from '../components/Dropdown'
+import { NoteCard } from '../components/NoteCard'
 
 type ProjectRef = Pick<Project, 'id' | 'client_name' | 'business_name' | 'created_at'>
-
-function NoteCard({ note, project, onSave, onDelete }: {
-  note: Note
-  project?: ProjectRef
-  onSave: (values: Partial<Note>) => Promise<void>
-  onDelete: () => void
-}) {
-  const [text, setText] = useState(note.content)
-  const c = NOTE_COLORS[note.color] ?? NOTE_COLORS.violet
-  return (
-    <article className={`flex min-h-36 flex-col rounded-card border p-4 transition-colors sm:min-h-48 ${c.card}`}>
-      {project && (
-        <p className="mb-2 flex items-center gap-1.5 truncate text-xs font-medium text-ghost/80" title={project.client_name}>
-          <Briefcase size={12} className="shrink-0 text-violet-soft" />
-          <span className="truncate">{project.client_name}</span>
-        </p>
-      )}
-      <textarea
-        aria-label="Contenido de la nota"
-        placeholder="Escribe algo…"
-        rows={3}
-        className="flex-1 resize-none bg-transparent text-base leading-relaxed sm:text-sm text-ghost placeholder:text-muted/60 focus:outline-none"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onBlur={() => text !== note.content && onSave({ content: text })}
-      />
-      <div className="-mb-2 mt-2 flex items-center justify-between gap-2">
-        <div className="-ml-1.5 flex" role="group" aria-label="Color">
-          {(Object.keys(NOTE_COLORS) as NoteColor[]).map((k) => (
-            <button key={k} onClick={() => onSave({ color: k })} aria-label={NOTE_COLORS[k].label} aria-pressed={note.color === k}
-              className="group grid h-8 w-7 place-items-center sm:h-7 sm:w-6">
-              <span className={`h-4 w-4 rounded-full ${NOTE_COLORS[k].swatch} ${note.color === k ? 'ring-2 ring-ghost ring-offset-2 ring-offset-carbon' : 'opacity-60 group-hover:opacity-100'}`} />
-            </button>
-          ))}
-        </div>
-        <div className="-mr-2 flex items-center">
-          <span className="font-mono text-[11px] text-muted">{formatDate(note.created_at)}</span>
-          <button onClick={onDelete} className="btn-icon hover:text-danger" aria-label="Eliminar nota"><Trash2 size={15} /></button>
-        </div>
-      </div>
-    </article>
-  )
-}
 
 function NewNoteDialog({ open, projects, onClose, onCreate }: {
   open: boolean
@@ -128,21 +85,56 @@ export function Notes() {
   const projectById = useMemo(() => new Map(projects.rows.map((p) => [p.id, p])), [projects.rows])
   const [creating, setCreating] = useState(false)
 
+  // Grupos: un bloque por proyecto (el de la nota más reciente primero) y al final las notas libres.
+  // Las notas ya vienen ordenadas por fecha descendente.
+  const groups = useMemo(() => {
+    const byProject = new Map<string, Note[]>()
+    const free: Note[] = []
+    for (const n of rows) {
+      if (n.project_id && projectById.has(n.project_id)) {
+        const list = byProject.get(n.project_id) ?? []
+        list.push(n)
+        byProject.set(n.project_id, list)
+      } else free.push(n)
+    }
+    const out = [...byProject].map(([id, notes]) => {
+      const p = projectById.get(id)!
+      return { key: id, title: p.client_name, subtitle: p.business_name, free: false, notes }
+    })
+    if (free.length) out.push({ key: 'free', title: 'Notas libres', subtitle: 'Sin proyecto asociado', free: true, notes: free })
+    return out
+  }, [rows, projectById])
+
   return (
     <>
       <PageHeader eyebrow="Ideas y recordatorios" title="Notas"
         action={<button onClick={() => setCreating(true)} className="btn-primary"><Plus size={16} /> Nueva nota</button>} />
       {error ? (
         <StateMessage title="No se pudieron cargar las notas" tone="error">{error}</StateMessage>
-      ) : loading ? (
+      ) : loading || projects.loading ? (
         <StateMessage title="Cargando…" />
       ) : rows.length === 0 ? (
         <StateMessage title="Sin notas">Apunta ideas, tareas o recordatorios rápidos.</StateMessage>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-          {rows.map((n) => (
-            <NoteCard key={n.id} note={n} project={n.project_id ? projectById.get(n.project_id) : undefined}
-              onSave={(v) => update(n.id, v)} onDelete={() => remove(n.id)} />
+        <div className="flex flex-col gap-8">
+          {groups.map((g) => (
+            <section key={g.key} aria-labelledby={`notes-${g.key}`}>
+              <header className="mb-3 flex items-center gap-3 border-b border-white/5 pb-2">
+                <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-control ${g.free ? 'bg-white/5 text-muted' : 'bg-violet/15 text-violet-soft'}`}>
+                  {g.free ? <StickyNote size={16} /> : <Briefcase size={16} />}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h2 id={`notes-${g.key}`} className="truncate text-base font-semibold">{g.title}</h2>
+                  {g.subtitle && <p className="truncate text-xs text-muted">{g.subtitle}</p>}
+                </div>
+                <span className="shrink-0 font-mono text-xs text-muted">{g.notes.length}</span>
+              </header>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                {g.notes.map((n) => (
+                  <NoteCard key={n.id} note={n} onSave={(v) => update(n.id, v)} onDelete={() => remove(n.id)} />
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       )}

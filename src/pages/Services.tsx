@@ -72,7 +72,7 @@ export function Services() {
                 </div>
                 <span className="shrink-0 font-mono text-sm text-violet-soft">{formatEUR(Number(s.price))}</span>
               </div>
-              <p className="flex-1 whitespace-pre-line text-sm text-muted">{s.description || '—'}</p>
+              <p className="flex-1 whitespace-pre-line text-sm text-muted [overflow-wrap:anywhere]">{s.description || '—'}</p>
               <div className="mt-4 flex justify-end gap-1 border-t border-white/5 pt-2">
                 <button onClick={() => openEdit(s)} className="btn-icon" aria-label={`Editar ${s.name}`}><Pencil size={16} /></button>
                 <button onClick={() => setToDelete(s)} className="btn-icon hover:text-danger" aria-label={`Eliminar ${s.name}`}><Trash2 size={16} /></button>

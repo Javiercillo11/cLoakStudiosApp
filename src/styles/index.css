@@ -29,6 +29,11 @@
       placeholder:text-muted/60 transition-colors hover:border-white/20 focus:border-violet focus:outline-none;
   }
   .label { @apply mb-1.5 block text-xs font-medium text-muted; }
+  /* Barra de scroll fina y discreta (modales, listas) */
+  .scroll-thin { scrollbar-width: thin; scrollbar-color: rgb(255 255 255 / 0.18) transparent; }
+  .scroll-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scroll-thin::-webkit-scrollbar-track { background: transparent; }
+  .scroll-thin::-webkit-scrollbar-thumb { background: rgb(255 255 255 / 0.18); border-radius: 9999px; }
   /* Botón de solo icono: 40px de zona táctil en móvil, compacto en escritorio */
   .btn-icon { @apply btn-ghost h-10 w-10 p-0 sm:h-9 sm:w-9; }
 }
