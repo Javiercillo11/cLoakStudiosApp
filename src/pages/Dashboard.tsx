@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, ArrowRight, HardDrive } from 'lucide-react'
+import { AlertTriangle, ArrowRight, HardDrive, Inbox } from 'lucide-react'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useTable } from '../hooks/useTable'
+import { useNewLeadsCount } from '../hooks/useLeads'
 import { STATUSES, STATUS_LABEL, type Project, type Service } from '../lib/types'
 import { formatBytes, formatDate, formatEUR, formatPct } from '../lib/format'
 import { STORAGE_QUOTA_BYTES, STORAGE_WARN_RATIO, storageUsedBytes } from '../lib/attachments'
@@ -47,6 +48,28 @@ function StorageWarning({ used }: { used: number | null }) {
       </div>
       <Link to="/documentacion" className="btn-ghost shrink-0 self-start sm:self-center">Revisar ficheros <ArrowRight size={16} /></Link>
     </section>
+  )
+}
+
+/** Solicitudes nuevas de la web. No se muestra si la tabla aún no existe (count null). */
+function NewLeadsCard({ count }: { count: number | null }) {
+  if (count === null) return null
+  const any = count > 0
+  return (
+    <Link to="/solicitudes" aria-labelledby="new-leads"
+      className={`card group flex items-center gap-3 p-4 transition-colors hover:border-violet/40 sm:gap-4 sm:p-5 ${
+        any ? 'border-[#EAB308]/40 bg-[#EAB308]/[0.06]' : ''}`}>
+      <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-control ${any ? 'bg-[#EAB308]/15 text-[#FDE047]' : 'bg-violet/15 text-violet-soft'}`}>
+        <Inbox size={17} aria-hidden />
+      </span>
+      <div className="min-w-0 flex-1">
+        <h2 id="new-leads" className="eyebrow">Solicitudes nuevas</h2>
+        <p className="font-display text-xl font-semibold tracking-tight">
+          {any ? `${count} por revisar` : 'Todo al día'}
+        </p>
+      </div>
+      <span className="btn-ghost shrink-0 group-hover:text-ghost">Ver <ArrowRight size={16} /></span>
+    </Link>
   )
 }
 
@@ -129,6 +152,7 @@ export function Dashboard() {
   }, [projects.rows, services.rows])
 
   const total = projects.rows.length
+  const newLeads = useNewLeadsCount()
   const error = projects.error || services.error
 
   return (
@@ -143,6 +167,7 @@ export function Dashboard() {
       ) : (
         <div className="flex flex-col gap-4 sm:gap-6">
           <StorageWarning used={storageUsed} />
+          <NewLeadsCard count={newLeads} />
           <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             <Kpi label="Proyectos" value={total} hint={`${stats.byStatus.en_desarrollo} en desarrollo`} />
             <Kpi label="Facturado" value={formatEUR(stats.billed)} hint="Precio de proyectos desplegados" />

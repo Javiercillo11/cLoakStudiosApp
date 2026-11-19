@@ -1,12 +1,14 @@
 import { Suspense, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { BookOpen, Briefcase, LayoutDashboard, LogOut, Menu, Smartphone, StickyNote, Tag, X } from 'lucide-react'
+import { BookOpen, Briefcase, Inbox, LayoutDashboard, LogOut, Menu, Smartphone, StickyNote, Tag, X } from 'lucide-react'
 import { Wordmark } from './brand/Wordmark'
 import { useAuth } from '../hooks/useAuth'
 import { InstallAppDialog } from './InstallAppDialog'
+import { useNewLeadsCount } from '../hooks/useLeads'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/solicitudes', label: 'Solicitudes', icon: Inbox, badge: 'leads' as const },
   { to: '/proyectos', label: 'Proyectos', icon: Briefcase },
   { to: '/servicios', label: 'Servicios', icon: Tag },
   { to: '/notas', label: 'Notas', icon: StickyNote },
@@ -19,12 +21,13 @@ export function Layout() {
   const [installOpen, setInstallOpen] = useState(false)
   const { pathname } = useLocation()
   useEffect(() => setOpen(false), [pathname])
+  const newLeads = useNewLeadsCount() ?? 0
 
   const sidebar = (
     <div className="flex h-full flex-col gap-8 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
       <Wordmark />
       <nav aria-label="Principal" className="flex flex-col gap-1">
-        {NAV.map(({ to, label, icon: Icon, end }) => (
+        {NAV.map(({ to, label, icon: Icon, end, badge }) => (
           <NavLink
             key={to}
             to={to}
@@ -40,6 +43,12 @@ export function Layout() {
                 {isActive && <span className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-violet" />}
                 <Icon size={18} className={isActive ? 'text-violet-soft' : ''} />
                 {label}
+                {badge === 'leads' && newLeads > 0 && (
+                  <span className="ml-auto min-w-5 rounded-full bg-[#EAB308]/20 px-1.5 py-0.5 text-center font-mono text-[11px] leading-none text-[#FDE047]"
+                    aria-label={`${newLeads} ${newLeads === 1 ? 'nueva' : 'nuevas'}`}>
+                    {newLeads > 99 ? '99+' : newLeads}
+                  </span>
+                )}
               </>
             )}
           </NavLink>
@@ -86,8 +95,10 @@ export function Layout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/5 bg-obsidian px-4 py-3 pt-[max(0.75rem,calc(env(safe-area-inset-top)+0.5rem))] lg:hidden">
-          <button onClick={() => setOpen(true)} className="btn-icon -ml-2" aria-label="Abrir menú">
+          <button onClick={() => setOpen(true)} className="btn-icon relative -ml-2"
+            aria-label={newLeads > 0 ? `Abrir menú (${newLeads} ${newLeads === 1 ? 'solicitud nueva' : 'solicitudes nuevas'})` : 'Abrir menú'}>
             <Menu size={20} />
+            {newLeads > 0 && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#EAB308]" aria-hidden />}
           </button>
           <Wordmark />
         </header>

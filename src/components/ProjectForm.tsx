@@ -68,9 +68,13 @@ interface Props {
   onNoteSave: (id: string, values: Partial<Note>) => Promise<void>
   onNoteDelete: (n: Note) => void
   onNoteCreate: (values: Partial<Note>) => Promise<void>
+  /** Solo en altas: datos de partida (p. ej. al convertir una solicitud de la web) */
+  prefill?: Partial<Pick<Draft, 'client_name' | 'business_name' | 'phone' | 'description'>>
+  /** Solo en altas: se llama en cuanto el proyecto existe en la base de datos */
+  onCreated?: (id: string) => Promise<void>
 }
 
-export function ProjectForm({ open, project, services, notes, onClose, onSaved, onNoteSave, onNoteDelete, onNoteCreate }: Props) {
+export function ProjectForm({ open, project, services, notes, onClose, onSaved, onNoteSave, onNoteDelete, onNoteCreate, prefill, onCreated }: Props) {
   const serviceById = useMemo(() => new Map(services.map((s) => [s.id, s])), [services])
   const servicesSum = (ids: string[]) => ids.reduce((sum, id) => sum + Number(serviceById.get(id)?.price ?? 0), 0)
 
@@ -110,8 +114,9 @@ export function ProjectForm({ open, project, services, notes, onClose, onSaved, 
       setDraft(initial)
       setSaved(snapshot(initial, 0, ''))
     } else {
-      setDraft(EMPTY)
-      setSaved(snapshot(EMPTY, 0, ''))
+      const initial: Draft = { ...EMPTY, ...prefill }
+      setDraft(initial)
+      setSaved(snapshot(initial, 0, ''))
     }
     setAskSave(false)
     setSections({ general: true, business: false, contract: false, notes: false, files: false })
@@ -217,6 +222,7 @@ export function ProjectForm({ open, project, services, notes, onClose, onSaved, 
         if (error) throw error
         id = data.id as string
         setCreatedId(id)
+        await onCreated?.(id)
       }
       if (draft.serviceIds.length) {
         const { error } = await supabase

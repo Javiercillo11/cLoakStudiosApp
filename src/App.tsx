@@ -33,6 +33,7 @@ const Dashboard = lazyPage(() => import('./pages/Dashboard'), 'Dashboard')
 const Projects = lazyPage(() => import('./pages/Projects'), 'Projects')
 const Services = lazyPage(() => import('./pages/Services'), 'Services')
 const Notes = lazyPage(() => import('./pages/Notes'), 'Notes')
+const Leads = lazyPage(() => import('./pages/Leads'), 'Leads')
 const Documentation = lazyPage(() => import('./pages/Documentation'), 'Documentation')
 
 export default function App() {
@@ -43,6 +44,8 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route index element={<Dashboard />} />
+            <Route path="solicitudes" element={<Leads />} />
+            <Route path="solicitudes/:id" element={<Leads />} />
             <Route path="proyectos" element={<Projects />} />
             <Route path="servicios" element={<Services />} />
             <Route path="notas" element={<Notes />} />

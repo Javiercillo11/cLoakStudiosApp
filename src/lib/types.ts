@@ -100,3 +100,46 @@ export interface Note {
   color: NoteColor
   created_at: string
 }
+
+// ───────────── Solicitudes de la web (tabla leads) ─────────────
+
+export type LeadStatus = 'nuevo' | 'contactado' | 'convertido' | 'descartado'
+
+export const LEAD_STATUS_LABEL: Record<LeadStatus, string> = {
+  nuevo: 'Nueva',
+  contactado: 'Contactada',
+  convertido: 'Convertida',
+  descartado: 'Descartada',
+}
+export const LEAD_STATUSES = Object.keys(LEAD_STATUS_LABEL) as LeadStatus[]
+
+export type LeadService = 'web' | 'app' | 'qr' | 'otro'
+
+/** Mismos textos que el formulario de la web (SERVICE_LABELS) */
+export const LEAD_SERVICE_LABEL: Record<LeadService, string> = {
+  web: 'Página web para negocio',
+  app: 'Aplicación de gestión',
+  qr: 'QR para reseñas',
+  otro: 'Otro / No estoy seguro',
+}
+
+/** Respuesta propia del servicio, en el orden del formulario */
+export interface LeadDetail {
+  label: string
+  value: string
+}
+
+export interface Lead {
+  id: string
+  created_at: string
+  updated_at: string
+  status: LeadStatus
+  service: LeadService
+  name: string
+  business: string
+  email: string
+  phone: string
+  message: string
+  details: LeadDetail[]
+  project_id: string | null
+}
