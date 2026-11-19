@@ -17,6 +17,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog'
 import { StateMessage } from '../components/StateMessage'
 import { Dropdown } from '../components/Dropdown'
 import { ProjectForm } from '../components/ProjectForm'
+import { PushToggle } from '../components/PushToggle'
 
 /** Colores de estado: amarillo (nueva), azul (contactada), verde (convertida), gris (descartada) */
 const LEAD_STYLE: Record<LeadStatus, { badge: string; text: string; icon: LucideIcon }> = {
@@ -115,7 +116,7 @@ export function Leads() {
 
   return (
     <>
-      <PageHeader eyebrow="Web" title="Solicitudes" />
+      <PageHeader eyebrow="Web" title="Solicitudes" action={<PushToggle />} />
 
       <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row">
         <div className="relative flex-1">

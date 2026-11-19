@@ -45,6 +45,8 @@ npm test        # pruebas de la lógica (hitos de pago, validación de ficheros)
 1. **Settings → Secrets and variables → Actions → New repository secret**:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
+
+   Y en **Variables** (no secretas): `VITE_VAPID_PUBLIC_KEY` (clave pública de los avisos push).
 2. **Settings → Pages → Source: GitHub Actions**.
 3. Push a `main` → el workflow [`deploy.yml`](.github/workflows/deploy.yml) compila y publica en
    `https://<usuario>.github.io/cLoakStudiosApp/`.
@@ -60,3 +62,28 @@ Logo: generado a partir de `cLoak Studios/layout/logo.jpeg` → `public/logo-mar
 ### App móvil (PWA)
 
 La app se puede instalar en el móvil: pulsa en tu sesión (abajo en el menú) y sigue los pasos. Archivos: `public/manifest.webmanifest`, `public/sw.js` (solo cachea la interfaz; los datos de Supabase siempre van a la red) e iconos `public/icon-192.png`, `icon-512.png` e `icon-maskable-512.png`. El service worker solo se registra en producción. Si cambias `sw.js`, sube la versión de `CACHE` para que los móviles descarguen la nueva.
+
+### Avisos push de solicitudes nuevas
+
+Cada solicitud que llega desde la web envía una notificación a los dispositivos donde se hayan activado los avisos
+(botón «Activar avisos en este dispositivo» en Solicitudes). En iPhone solo funciona con la app instalada en la
+pantalla de inicio (iOS 16.4 o superior).
+
+Piezas: tabla `push_subscriptions` ([`007_push.sql`](supabase/migrations/007_push.sql)), `src/lib/push.ts`,
+los manejadores `push` y `notificationclick` de `public/sw.js` y la Edge Function
+[`notify-new-lead`](supabase/functions/notify-new-lead/index.ts).
+
+Configuración (una sola vez):
+
+1. Ejecutar `supabase/migrations/007_push.sql` en el SQL Editor.
+2. **Edge Functions → Secrets**: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (`mailto:…`) y
+   `LEAD_WEBHOOK_SECRET` (cadena aleatoria larga). La clave pública es la misma que `VITE_VAPID_PUBLIC_KEY`.
+3. Desplegar la función sin verificación JWT (se autentica con el secreto del webhook):
+   ```sh
+   npx supabase login
+   npx supabase functions deploy notify-new-lead --no-verify-jwt --project-ref <ref-del-proyecto>
+   ```
+4. **Database → Webhooks → Create a new hook**: tabla `leads`, evento *Insert*, tipo *Supabase Edge Functions*,
+   función `notify-new-lead`, método POST, timeout 5000 ms y cabecera `x-webhook-secret: <LEAD_WEBHOOK_SECRET>`.
+
+Si se cambian las claves VAPID, cada dispositivo debe volver a activar los avisos.
