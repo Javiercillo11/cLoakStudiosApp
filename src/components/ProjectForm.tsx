@@ -302,12 +302,13 @@ export function ProjectForm({ open, project, services, notes, onClose, onSaved, 
               <input id="p-province" autoComplete="address-level1" className="input" value={draft.province}
                 onChange={(e) => set('province', e.target.value)} />
             </div>
-            <div className="col-span-4 sm:col-span-2">
+            {/* Pantallas muy estrechas: ciudad y C. P. a medias para que el código quepa entero */}
+            <div className="col-span-3 min-[400px]:col-span-4 sm:col-span-2">
               <label className="label" htmlFor="p-city">Ciudad</label>
               <input id="p-city" autoComplete="address-level2" className="input" value={draft.city}
                 onChange={(e) => set('city', e.target.value)} />
             </div>
-            <div className="col-span-2">
+            <div className="col-span-3 min-[400px]:col-span-2">
               <label className="label" htmlFor="p-postal">C. postal</label>
               <input id="p-postal" inputMode="numeric" autoComplete="postal-code" maxLength={5} className="input font-mono"
                 placeholder="28001" value={draft.postal_code} aria-invalid={!!err('postal_code')}

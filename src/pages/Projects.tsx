@@ -140,10 +140,10 @@ export function Projects() {
         </StateMessage>
       ) : (
         <>
-        {/* Móvil: tarjetas */}
-        <ul className="flex flex-col gap-3 md:hidden">
+        {/* Móvil y tablet: tarjetas (dos columnas a partir de md) */}
+        <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:hidden">
           {visible.map((p) => (
-            <li key={p.id} className="card relative p-4 transition-colors active:bg-white/[0.03]">
+            <li key={p.id} className="card relative flex flex-col p-4 transition-colors active:bg-white/[0.03]">
               <div className="flex items-start justify-between gap-3">
                 <button type="button" onClick={() => setViewingId(p.id)}
                   className="min-w-0 flex-1 text-left after:absolute after:inset-0 after:content-[''] focus-visible:outline-none">
@@ -166,7 +166,8 @@ export function Projects() {
                   ))}
                 </div>
               )}
-              <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/5 pt-3">
+              {/* Pie siempre abajo, alineado entre tarjetas de la misma fila */}
+              <div className="mt-auto pt-3"><div className="flex items-center justify-between gap-2 border-t border-white/5 pt-3">
                 <div className="relative z-10 flex items-center gap-3">
                   <StatusMenu value={p.status} label={`Estado de ${projectName(p)}`}
                     onChange={(status) => changeStatus(p, status)} />
@@ -175,19 +176,19 @@ export function Projects() {
                 <div className="relative z-10 -mr-2 flex">
                   <button onClick={() => setToDelete(p)} className="btn-icon hover:text-danger" aria-label={`Eliminar ${projectName(p)}`}><Trash2 size={16} /></button>
                 </div>
-              </div>
+              </div></div>
             </li>
           ))}
         </ul>
 
-        {/* Tablet/escritorio: tabla */}
-        <div className="card hidden overflow-x-auto md:block">
-          <table className="w-full min-w-[62rem] text-left text-sm">
+        {/* Escritorio: tabla. La descripción solo cabe en pantallas muy anchas (2xl) */}
+        <div className="card hidden overflow-x-auto xl:block">
+          <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-white/5">
-                {['Nombre del negocio', 'Cliente', 'Descripción', 'Servicios', 'Precio', 'Cobrado', 'Estado', 'Alta', ''].map((h) => {
+                {['Proyecto', 'Descripción', 'Servicios', 'Precio', 'Cobrado', 'Estado', 'Alta', ''].map((h) => {
                   const key = h === 'Precio' ? 'price' : h === 'Alta' ? 'created' : null
-                  if (!key) return <th key={h} scope="col" className="eyebrow whitespace-nowrap px-4 py-3 font-normal">{h}</th>
+                  if (!key) return <th key={h} scope="col" className={`eyebrow whitespace-nowrap px-4 py-3 font-normal ${h === 'Descripción' ? 'hidden 2xl:table-cell' : ''}`}>{h}</th>
                   const active = sort?.key === key
                   const Arrow = !active ? ArrowUpDown : sort.dir === 'desc' ? ArrowDown : ArrowUp
                   return (
@@ -209,14 +210,14 @@ export function Projects() {
               {visible.map((p) => (
                 <tr key={p.id} onClick={() => setViewingId(p.id)}
                   className="cursor-pointer border-b border-white/5 last:border-0 hover:bg-white/[0.03]">
-                  <td className="min-w-[9rem] px-4 py-3 font-medium">
+                  <td className="min-w-[11rem] max-w-[18rem] px-4 py-3">
                     <button type="button" onClick={(e) => { e.stopPropagation(); setViewingId(p.id) }}
-                      className="text-left hover:text-violet-soft focus-visible:text-violet-soft focus-visible:outline-none">
-                      {p.business_name || <span className="text-muted">—</span>}
+                      className="block text-left font-medium hover:text-violet-soft focus-visible:text-violet-soft focus-visible:outline-none">
+                      {projectName(p)}
                     </button>
+                    {p.business_name.trim() && <span className="mt-0.5 block text-xs text-muted">{p.client_name}</span>}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-muted">{p.client_name}</td>
-                  <td className="min-w-[9rem] max-w-[13rem] px-4 py-3 text-xs text-muted">{p.description ? <ClampedText text={p.description} /> : '—'}</td>
+                  <td className="hidden min-w-[9rem] max-w-[15rem] px-4 py-3 text-xs text-muted 2xl:table-cell">{p.description ? <ClampedText text={p.description} /> : '—'}</td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {p.project_services.length === 0 && <span className="text-muted">—</span>}

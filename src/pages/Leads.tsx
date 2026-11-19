@@ -121,7 +121,7 @@ export function Leads() {
       <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row">
         <div className="relative flex-1">
           <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-          <input type="search" placeholder="Buscar nombre, negocio, email o mensaje…" aria-label="Buscar solicitudes"
+          <input type="search" placeholder="Buscar solicitudes…" aria-label="Buscar solicitudes"
             className="input pl-9" value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
         <div className="sm:w-60">
@@ -149,7 +149,7 @@ export function Leads() {
             : 'Las solicitudes que se envíen desde el formulario de la web aparecerán aquí al momento.'}
         </StateMessage>
       ) : (
-        <ul className="grid gap-3" aria-label="Solicitudes">
+        <ul className="grid grid-cols-1 gap-3" aria-label="Solicitudes">
           {visible.map((l) => (
             <li key={l.id}>
               <Link to={`/solicitudes/${l.id}`}
